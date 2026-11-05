@@ -1,18 +1,131 @@
 # Keydock
 
-Keydock est un dashboard BYOK en React + TypeScript pour organiser des clés de fournisseurs LLM et préparer des conversations depuis un même espace. Le prototype est frontend-only : aucune clé n’est incluse dans le dépôt et les valeurs saisies sont conservées uniquement dans le `localStorage` du navigateur.
+> **BYOK control room for modern AI workflows.**
+>
+> Un cockpit local pour connecter, comparer et préparer des appels vers plusieurs fournisseurs IA sans disperser ses clés API.
 
-## Développement
+Keydock est une interface React + TypeScript pensée pour les prototypes, les équipes produit et les développeurs qui veulent tester rapidement plusieurs providers LLM depuis un même espace. Le dashboard réunit un playground conversationnel à gauche et un gestionnaire de credentials à droite, dans une interface claire, dense et responsive.
+
+> **Statut : prototype UI fonctionnel** — le stockage local, la sélection de provider et les interactions de gestion sont opérationnels. L’envoi réseau vers les fournisseurs doit encore être branché derrière une architecture de production adaptée.
+
+## Ce que le prototype couvre
+
+| Domaine | Fonctionnalités |
+| --- | --- |
+| **Playground** | Conversation en session, sélection du provider actif, pièces jointes locales, commande microphone et réponses de démonstration. |
+| **API key manager** | Ajout, modification, suppression, copie, masquage/révélation et statut de chaque clé. |
+| **Providers** | OpenRouter en choix recommandé, Groq en fallback haute vitesse, GitHub Models comme option sans friction. |
+| **Sécurité locale** | Aucune clé codée en dur, aucune base de données, aucun envoi tiers effectué par cette interface. |
+| **Déploiement** | SPA statique, build Vite, configuration Netlify prête à l’emploi et manifest de routes Manus. |
+
+## Providers de départ
+
+### OpenRouter — choix recommandé
+Un endpoint compatible OpenAI pour changer de modèle sans réécrire l’intégration. Keydock le présente comme le meilleur point d’entrée pour expérimenter rapidement avec plusieurs familles de modèles.
+
+- Endpoint de référence : `openrouter.ai/api/v1`
+- Limites affichées dans le prototype : environ `20 requêtes/minute` et `50 requêtes/jour` pour l’offre gratuite
+- Usage conseillé : prototypage polyvalent, comparaison de modèles, itération produit
+
+### Groq — fallback haute vitesse
+Une option orientée performance lorsque le débit et la latence deviennent prioritaires.
+
+- Endpoint de référence : `api.groq.com/openai/v1`
+- Limite affichée dans le prototype : environ `1 000 requêtes/jour`
+- Usage conseillé : traitements textuels en volume, benchmarks, boucles de test rapides
+
+### GitHub Models — démarrage sans friction
+Une alternative pratique pour les équipes déjà équipées d’un compte GitHub et qui souhaitent expérimenter sans multiplier les comptes fournisseurs.
+
+- Endpoint de référence : `models.inference.ai.azure.com`
+- Limites : variables selon le modèle et le niveau de quota
+- Usage conseillé : essais ponctuels, projets GitHub-first, découverte de modèles
+
+> Les quotas sont des repères d’interface et peuvent évoluer selon les conditions commerciales de chaque fournisseur. Vérifiez toujours la documentation officielle avant une mise en production.
+
+## Modèle de sécurité actuel
+
+Keydock adopte une posture **local-first** pour ce prototype :
+
+1. Les valeurs saisies sont conservées dans le `localStorage` du navigateur, sous une clé d’application dédiée.
+2. Aucune clé privée n’est présente dans le code source, le dépôt ou les fichiers `.env`.
+3. L’interface ne transmet pas les credentials à une base de données ou à un service de stockage tiers.
+4. Les clés sont masquées par défaut et ne sont copiées que sur action explicite de l’utilisateur.
+5. Le playground actuel simule la préparation d’un prompt ; il ne déclenche pas encore d’appel fournisseur en arrière-plan.
+
+**Important :** `localStorage` n’est pas un coffre chiffré. Toute personne disposant d’un accès au profil navigateur peut potentiellement lire ces valeurs. Pour une version de production, remplacer ce stockage par un vault sécurisé ou un backend de proxy avec rotation, contrôle d’accès, audit, rate limiting et séparation stricte des environnements.
+
+## Stack
+
+- **React 19** et **TypeScript**
+- **Vite** pour le développement et le bundling
+- CSS natif avec design system léger, responsive et sans dépendance UI lourde
+- `localStorage` pour la persistance locale du prototype
+- Netlify pour la publication statique
+
+## Démarrage local
+
+Prérequis : Node.js 18+ et npm.
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Build Netlify
+Le serveur de développement écoute sur le port `3000` lorsque le runtime Manus est utilisé. Pour produire un build de vérification :
 
-Le site est une SPA statique. Utilisez `npm run build` comme commande de build et `dist` comme dossier de publication. Le fichier `netlify.toml` reprend ces valeurs et redirige les routes vers `index.html`.
+```bash
+npm run build
+```
 
-## Sécurité BYOK
+Le résultat est généré dans `dist/`.
 
-Les clés saisies dans Keydock ne sont pas envoyées à une base de données ni à un service tiers par cette interface. Avant une mise en production avec appels directs à des fournisseurs, ajoutez une politique CSP stricte, chiffrez ou isolez les secrets selon le modèle de menace choisi et ne publiez jamais de `.env` contenant une clé privée.
+## Déploiement Netlify
+
+Le dépôt contient déjà un `netlify.toml` configuré :
+
+```toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+```
+
+Dans Netlify, sélectionnez le dépôt GitHub, conservez ces valeurs puis lancez le premier déploiement. La redirection SPA `/* → /index.html` est incluse pour préserver le dashboard sur les routes côté client.
+
+### Checklist avant publication
+
+- Remplacer le stockage `localStorage` par une stratégie de secrets adaptée au modèle de menace.
+- Ajouter une Content Security Policy et vérifier les domaines autorisés pour les polices et futures API.
+- Ne jamais ajouter de clé réelle dans le dépôt, les logs, les screenshots ou les variables publiques du frontend.
+- Brancher les appels fournisseurs via un proxy serveur si les clés ne doivent pas être exposées au navigateur.
+- Vérifier les conditions, quotas et politiques de rétention propres à chaque provider.
+
+## Structure du projet
+
+```text
+.
+├── src/
+│   ├── main.tsx          # application React, état local et interactions
+│   └── styles.css        # design system et responsive layout
+├── public/
+│   └── manus-routes.json # routes déclarées au runtime
+├── netlify.toml          # build et fallback SPA Netlify
+├── app.config.ts         # métadonnées du projet
+└── TODO.md               # état des objectifs produit
+```
+
+## Roadmap proposée
+
+- Connecter le chat à un proxy sécurisé et à des modèles réels.
+- Ajouter un coffre chiffré, la rotation et la révocation des credentials.
+- Ajouter un historique de requêtes opt-in avec redaction des secrets.
+- Ajouter la sélection de modèles par provider et un comparateur de latence/coût.
+- Ajouter des tests de composants et une CI de build sur le dépôt GitHub.
+
+## Contribution
+
+Les contributions doivent préserver les principes suivants : pas de secrets dans le code, pas de télémétrie implicite sur les prompts, composants lisibles, interactions clavier accessibles et dégradation propre sur mobile.
+
+## Licence
+
+À définir avec les mainteneurs du dépôt `sieni7/byok_tester` avant ouverture publique.

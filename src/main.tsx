@@ -284,7 +284,7 @@ function App() {
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
             <div className="keys-head"><div><div className="section-kicker">YOUR PROVIDERS</div><h2 id="keys-title">API key manager</h2></div><button className="add-key-button" type="button" onClick={() => beginEdit('openrouter')}><Icon name="plus" size={16} /> Add key</button></div>
-            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>Stored safely in your local browser vault</span></div></div><div className="summary-badge"><span /> encrypted at rest*</div></div>
+            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>Stored only in this browser</span></div></div><div className="summary-badge"><span /> local storage only*</div></div>
             <div className="provider-list">
               <ProviderCard provider={providers[0]} value={keys.openrouter} isActive={activeProvider === 'openrouter'} isOpen={openEditor === 'openrouter'} draftKey={draftKey} revealed={revealed.has('openrouter')} copied={copied === 'openrouter'} onActivate={() => setActiveProvider('openrouter')} onEdit={() => beginEdit('openrouter')} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal('openrouter')} onCopy={() => copyKey('openrouter')} onDelete={() => deleteKey('openrouter')} />
               <div className="provider-pair">
@@ -292,7 +292,7 @@ function App() {
                 <ProviderCard provider={providers[2]} value={keys.github} isActive={activeProvider === 'github'} isOpen={openEditor === 'github'} draftKey={draftKey} revealed={revealed.has('github')} copied={copied === 'github'} onActivate={() => setActiveProvider('github')} onEdit={() => beginEdit('github')} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal('github')} onCopy={() => copyKey('github')} onDelete={() => deleteKey('github')} />
               </div>
             </div>
-            <p className="security-caption">* Keydock stores a local reference only in this prototype. Connect a secure vault before using this pattern in production.</p>
+            <p className="security-caption">* Prototype local : le navigateur n’est pas un coffre chiffré. Connectez un vault sécurisé avant la production.</p>
           </section>
         </div>
       </main>
