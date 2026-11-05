@@ -6,7 +6,7 @@
 
 Keydock est une interface React + TypeScript pensée pour les prototypes, les équipes produit et les développeurs qui veulent tester rapidement plusieurs providers LLM depuis un même espace. Le dashboard réunit un playground conversationnel à gauche et un gestionnaire de credentials à droite, dans une interface claire, dense et responsive.
 
-> **Statut : prototype UI fonctionnel** — le stockage local, la sélection de provider et les interactions de gestion sont opérationnels. L’envoi réseau vers les fournisseurs doit encore être branché derrière une architecture de production adaptée.
+> **Statut : v0.2.0-alpha.1 — socle en construction** — le stockage local, la sélection de provider et les interactions de gestion restent opérationnels. Cette livraison ajoute les types, registres et contrôles reproductibles nécessaires avant le premier appel fournisseur réel.
 
 ## Ce que le prototype couvre
 
@@ -115,6 +115,8 @@ Dans Netlify, sélectionnez le dépôt GitHub, conservez ces valeurs puis lancez
 ```
 
 ## Roadmap proposée
+
+La série v0.2 est livrée par étapes : `alpha.1` socle et dépendances verrouillées, `alpha.2` credentials session/local, `alpha.3` premier appel NVIDIA NIM, `beta.1` chat réel et erreurs normalisées, `beta.2` catalogue multi-provider, `rc.1` comparateur et validation, puis `v0.2.0` stable.
 
 - Connecter le chat à un proxy sécurisé et à des modèles réels.
 - Ajouter un coffre chiffré, la rotation et la révocation des credentials.
