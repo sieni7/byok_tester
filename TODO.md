@@ -1,18 +1,40 @@
 # TODO — Keydock
 
-## Dashboard responsive et architecture statique
-- [x] Le projet TypeScript React fournit un dashboard responsive à deux zones : fenêtre de chat à gauche et panneau de gestion des clés API à droite, avec adaptation mobile soignée.
-- [ ] Le projet est prêt pour un dépôt GitHub public et une publication statique sur Netlify, avec configuration de build et documentation de déploiement adaptées. La configuration Netlify est livrée ; la création du dépôt GitHub reste en attente de validation de la carte externe.
+## Keydock v0.2 — Free Models Lab
 
-## Chat BYOK
-- [x] L’interface de chat permet la saisie des messages et conserve un historique de conversation dans la session.
-- [x] L’interface expose des commandes pour joindre des fichiers et utiliser le microphone.
-- [x] Un sélecteur permet de basculer simplement entre OpenRouter, Groq et GitHub Models configurés.
+- [x] `v0.2.0-alpha.1` : socle React/TypeScript, dépendances verrouillées, types communs et registres.
+- [x] `v0.2.0-alpha.1.1 corrective` : UI pilotée par le registre, politiques d'accès au niveau modèle, séparation initiale session/local.
+- [ ] `v0.2.0-alpha.1.2 corrective` (implémentation poussée, validation indépendante en attente) : mode session par défaut sans lecture/écriture de stockage persistant ; tests comportementaux instrumentés ; scanner récursif des sources ; README et TODO alignés.
+- [ ] Validation indépendante alpha.1.2 : `npm run test:credentials`, `npm run verify:alpha1`, `npm run build`, `git diff --check`, revue du diff et du Preview.
+- [ ] `v0.2.0-alpha.2` : stabiliser l'UX credentials et les états de stockage après validation alpha.1.2.
+- [ ] `v0.2.0-alpha.3` : intégrer NVIDIA NIM pour un premier appel texte réel, uniquement après validation du socle.
+- [ ] `v0.2.0-beta.1` : remplacer les réponses simulées par un chat réel et normaliser les erreurs.
+- [ ] `v0.2.0-beta.2` : compléter les providers et le catalogue de modèles.
+- [ ] `v0.2.0-rc.1` : comparateur multi-modèles et validation complète.
+- [ ] `v0.2.0` : version stable après validation humaine.
 
-## Fournisseurs et gestion des clés
-- [x] OpenRouter est mis en avant comme choix polyvalent, avec endpoint compatible SDK OpenAI, accès à de nombreux modèles gratuits et limites indicatives de 20 requêtes par minute et 50 par jour.
-- [x] Groq est présenté comme solution de secours rapide et généreuse, avec limites indicatives d’environ 30 requêtes par minute et 1 000 par jour.
-- [x] GitHub Models est présenté comme alternative sans friction liée au compte GitHub, avec indication de limites plus restrictives.
-- [x] Chaque clé API peut être ajoutée, modifiée, révélée ou masquée, copiée et supprimée, avec libellés clairs et regroupement par famille de fournisseurs.
-- [x] Des indicateurs visuels distinguent les fournisseurs configurés, non configurés et actuellement actifs.
-- [x] Les clés sont conservées exclusivement localement dans le navigateur, sans clé codée en dur, sans envoi vers un service de stockage tiers et sans exposition involontaire dans l’interface.
+## Dashboard et architecture
+
+- [x] Dashboard responsive à deux zones : playground et gestionnaire de clés.
+- [x] Registre des providers séparé des modèles et des politiques d'accès.
+- [x] Politique `unknown-unverified` explicite en l'absence de vérification datée.
+- [ ] Ajouter des tests UI ciblés sans élargir prématurément l'architecture.
+
+## Playground
+
+- [x] Saisie des messages et historique conservé en mémoire de session.
+- [x] Sélecteur de provider actif.
+- [ ] Remplacer les réponses de démonstration par des appels réels après mise en place d'une architecture de credentials adaptée.
+- [ ] Implémenter réellement la lecture des fichiers et la capture microphone, ou conserver des libellés explicitement démonstratifs.
+
+## Credentials
+
+- [x] Ajout, modification, suppression, copie et masquage/révélation des clés.
+- [x] Mode session volatil par défaut : aucun accès à localStorage au démarrage.
+- [x] Mode local facultatif avec avertissement explicite sur l'absence de chiffrement.
+- [x] Confirmation avant basculement susceptible de remplacer les clés visibles en mémoire.
+- [x] Retour d'état explicite si l'enregistrement local réussit ou échoue.
+- [x] Copie presse-papiers avec gestion des API absentes et des refus d'autorisation.
+- [x] Thème clair/sombre, initialisé sur la préférence système et commutable pendant la session.
+- [x] Tests runtime vérifiant l'absence d'accès au stockage en mode session, le chargement/sauvegarde locale et le fallback sur stockage indisponible.
+- [ ] Étudier un proxy/vault serveur avant toute exposition publique des appels fournisseurs.
