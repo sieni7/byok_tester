@@ -77,7 +77,6 @@ src/
 └── main.tsx
 scripts/
 ├── test-credentials.mjs
-├── test-credentials.mjs
 ├── test-nvidia.mjs
 └── verify-alpha1.mjs
 public/
