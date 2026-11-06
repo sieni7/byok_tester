@@ -33,7 +33,7 @@
 - [x] Ajout, modification, suppression, copie et masquage/révélation des clés.
 - [x] Mode session volatil par défaut : aucun accès à localStorage au démarrage.
 - [x] Mode local facultatif avec avertissement explicite sur l'absence de chiffrement.
-- [ ] Choix de mode présenté sous forme de deux cartes accessibles et descriptives ; session recommandée par défaut.
+- [x] Choix de mode présenté sous forme de deux cartes accessibles et descriptives ; session recommandée par défaut.
 - [x] Confirmation avant basculement susceptible de remplacer les clés visibles en mémoire.
 - [x] Retour d'état explicite si l'enregistrement local réussit ou échoue.
 - [x] Copie presse-papiers avec gestion des API absentes et des refus d'autorisation.
