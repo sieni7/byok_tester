@@ -288,7 +288,7 @@ function App() {
             {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion réelle NVIDIA NIM · votre prompt et votre clé sont transmis directement à NVIDIA. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
             <form className="composer" onSubmit={handleSend}>
               {attachedFile && <div className="attachment-chip"><Icon name="paperclip" size={14} /> {attachedFile}<button type="button" onClick={() => setAttachedFile(null)} aria-label="Retirer la pièce jointe">×</button></div>}
-              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ask anything about your setup...'} rows={2} aria-label="Votre message" disabled={isSending} />
+              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Votre message" disabled={isSending} />
               <div className="composer-actions">
                 <div className="composer-tools">
                   <label className="tool-button" aria-label="Joindre un fichier"><Icon name="paperclip" size={17} /><input type="file" onChange={handleFile} /></label>
@@ -302,7 +302,7 @@ function App() {
           </section>
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
-            <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
+            <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Ajouter une clé</button></div>
             <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'En mémoire · effacée au rechargement' : 'Enregistrée dans ce navigateur'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
             <div className="credential-mode-section">
               <div className="storage-mode-heading"><strong>Où conserver votre clé API ?</strong><span>Choisissez le mode de conservation. Vous pourrez en changer à tout moment.</span></div>
@@ -321,7 +321,7 @@ function App() {
               ? <p className="storage-feedback session" role="status">Session mode active: no credentials are read from or written to persistent browser storage.</p>
               : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Stockage local indisponible : le navigateur bloque l’accès à localStorage. La clé reste utilisable en mémoire dans cet onglet, mais elle ne sera pas conservée après rechargement. Vous pouvez repasser en mode session.' : storageFeedback === 'saved' ? 'Enregistrement local confirmé dans ce navigateur. Attention : la clé n’est pas chiffrée.' : 'Vérification du stockage local…'}</p>}
             <div className="provider-list">
-              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} keyEditorError={keyEditorError} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => { setOpenEditor(null); setKeyEditorError(null) }} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
+              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} keyEditorError={keyEditorError} storageMode={storageMode} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={(value) => { setDraftKey(value); setKeyEditorError(null) }} onSave={saveKey} onCancel={() => { setOpenEditor(null); setKeyEditorError(null) }} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
             <p className="security-caption">Le mode session est temporaire : aucune clé n’est lue depuis ou écrite dans le stockage persistant. Le mode local utilise le localStorage du navigateur, sans chiffrement. Supprimer une clé ici ne la révoque pas chez NVIDIA.</p>
           </section>
@@ -339,6 +339,7 @@ type ProviderCardProps = {
   isOpen: boolean
   draftKey: string
   keyEditorError: string | null
+  storageMode: CredentialStorageMode
   revealed: boolean
   copied: boolean
   copyError: boolean
@@ -352,7 +353,7 @@ type ProviderCardProps = {
   onDelete: () => void
 }
 
-function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, keyEditorError, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
+function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, keyEditorError, storageMode, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
   if (!isOperational) {
     return (
       <article className="provider-card coming-soon" aria-disabled="true">
@@ -367,7 +368,7 @@ function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftK
     )
   }
   const hasKey = Boolean(value)
-  const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'No key connected'
+  const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'Aucune clé connectée'
   return (
     <article className={`provider-card ${isOperational ? 'featured operational' : 'coming-soon'} ${isActive ? 'active' : ''}`}>
       <div className="provider-topline"><div className={`provider-logo ${provider.accent}`}>{provider.shortName}</div><div className="provider-title"><div><h3>{provider.name}</h3><span className={isOperational ? 'recommendation' : 'coming-soon-badge'}>{provider.badge}</span></div><span>{provider.family}</span></div>{isOperational ? <span className="active-toggle selected"><span />Opérationnel</span> : <span className="active-toggle coming-soon-toggle">À venir</span>}</div>
@@ -377,13 +378,13 @@ function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftK
         <div className="key-status"><span className="key-status-dot" /><div><span className="key-label">API key</span><strong>{masked}</strong></div></div>
         <div className="key-actions">
           {hasKey && <><button type="button" className="plain-icon" onClick={onReveal} aria-label={revealed ? 'Masquer la clé' : 'Révéler la clé'}><Icon name={revealed ? 'eyeOff' : 'eye'} size={16} /></button><button type="button" className="plain-icon" onClick={onCopy} aria-label="Copier la clé"><Icon name="copy" size={16} /></button></>}
-          <button type="button" className="edit-key" onClick={onEdit}>{hasKey ? 'Edit' : 'Connect'} <Icon name="arrow" size={14} /></button>
+          <button type="button" className="edit-key" onClick={onEdit}>{hasKey ? 'Modifier' : 'Connecter'} <Icon name="arrow" size={14} /></button>
           {hasKey && <button type="button" className="plain-icon delete" onClick={onDelete} aria-label="Supprimer la clé"><Icon name="trash" size={15} /></button>}
         </div>
       </div>
       {copied && <div className="copied-toast" role="status">Copié dans le presse-papiers</div>}
       {copyError && <div className="copy-error" role="alert">Copie impossible. Vérifiez les autorisations du navigateur ou utilisez la sélection manuelle.</div>}
-      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Clé API {provider.name}</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus autoComplete="off" spellCheck={false} value={draftKey} onChange={(event) => { onDraft(event.target.value) }} placeholder="Collez votre clé API NVIDIA" aria-invalid={Boolean(keyEditorError)} aria-describedby={keyEditorError ? `${provider.id}-key-error` : undefined} /><button type="button" onClick={onSave}>Enregistrer</button></div>{keyEditorError && <p className="key-editor-error" id={`${provider.id}-key-error`} role="alert">{keyEditorError}</p>}<div className="editor-actions"><span>{'Conservation : '}{'mode choisi dans le gestionnaire'}</span><button type="button" onClick={onCancel}>Annuler</button></div></div>}
+      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Clé API {provider.name}</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus autoComplete="off" spellCheck={false} value={draftKey} onChange={(event) => { onDraft(event.target.value) }} placeholder="Collez votre clé API NVIDIA" aria-invalid={Boolean(keyEditorError)} aria-describedby={keyEditorError ? `${provider.id}-key-error` : undefined} /><button type="button" onClick={onSave}>Enregistrer</button></div>{keyEditorError && <p className="key-editor-error" id={`${provider.id}-key-error`} role="alert">{keyEditorError}</p>}<div className="editor-actions"><span>{'Conservation : '}{storageMode === 'session' ? 'session temporaire' : 'stockage local du navigateur'}</span><button type="button" onClick={onCancel}>Annuler</button></div></div>}
     </article>
   )
 }
