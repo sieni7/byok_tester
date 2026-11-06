@@ -25,7 +25,7 @@ const expectedVersions = {
   vite: '8.3.6',
   '@vitejs/plugin-react': '6.2.1',
 }
-assert.equal(packageJson.version, '0.2.0-alpha.1.2')
+assert.equal(packageJson.version, '0.2.0-alpha.2')
 assert.equal(lockfile.version, packageJson.version, 'package-lock root version drift')
 assert.equal(lockfile.packages[''].version, packageJson.version, 'package-lock package version drift')
 assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0')
@@ -52,7 +52,11 @@ assert.ok(!/pricing: 'free'/.test(policies), 'Unverified provider-level free cla
 assert.ok(models.includes('accessPolicyId'), 'Model registry must own access policy references')
 assert.ok(app.includes("useState<CredentialStorageMode>('session')"), 'Session must be the default credential mode')
 assert.ok(app.includes("loadCredentials('session')"), 'Startup must not load persistent credentials')
-assert.ok(app.includes('Session only (volatile)'), 'Session and local modes must remain selectable')
+assert.ok(app.includes('credential-mode-options'), 'Credential modes must be presented as explicit options')
+assert.ok(app.includes('aria-pressed={storageMode === \'session\'}'), 'Session mode selection must expose its pressed state')
+assert.ok(app.includes('aria-pressed={storageMode === \'local\'}'), 'Local mode selection must expose its pressed state')
+assert.ok(app.includes('Session mode active: no credentials are read from or written to persistent browser storage.'), 'Session mode must explain its persistence behavior')
+assert.ok(app.includes('localStorage is not encrypted or a secure vault.'), 'Local mode must explain its security limitation')
 assert.ok(credentials.includes("if (mode === 'session') return emptyCredentials()"), 'Session load must return before storage access')
 assert.ok(credentials.includes("if (mode === 'session') return false"), 'Session save must return before storage access')
 assert.ok(credentials.includes('targetStorage.getItem(CREDENTIAL_STORAGE_KEY)'), 'Local loading must use the credential key')
@@ -91,4 +95,4 @@ for (const file of scannedFiles) {
 }
 
 execFileSync(process.execPath, ['scripts/test-credentials.mjs'], { stdio: 'inherit' })
-console.log(`alpha.1.2 verification passed; recursively scanned ${scannedFiles.length - 1} source files`)
+console.log(`alpha.2 verification passed; recursively scanned ${scannedFiles.length - 1} source files`)
