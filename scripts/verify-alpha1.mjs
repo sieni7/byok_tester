@@ -83,6 +83,15 @@ assert.ok(credentials.includes("if (mode === 'session') return false"), 'Session
 assert.ok(credentials.includes('targetStorage.getItem(CREDENTIAL_STORAGE_KEY)'), 'Local loading must use the credential key')
 assert.ok(credentials.includes('targetStorage.setItem(CREDENTIAL_STORAGE_KEY'), 'Local persistence must be explicit')
 
+assert.ok(app.includes('useRef(false)'), 'A synchronous lock must prevent duplicate submissions before React state updates')
+assert.ok(app.includes('Saisissez un prompt avant de lancer le test.'), 'Empty prompts must be rejected with feedback')
+assert.ok(app.includes('Votre prompt est conservé : vous pouvez le modifier ou le renvoyer.'), 'Successful requests must retain the prompt for retry or editing')
+assert.ok(app.includes('NVIDIA NIM traite votre demande…'), 'The in-flight request must expose a loading status')
+assert.ok(app.includes('disabled={isSending || !draftMessage.trim()}'), 'The submit button must be disabled while sending or when the prompt is blank')
+assert.ok(app.includes('setSendError(error instanceof Error ? error.message'), 'Failed requests must expose a normalized error while retaining the prompt')
+assert.ok(!app.includes("setDraftMessage('')"), 'The test flow must not clear the prompt after submission')
+assert.ok(app.includes('setMessages((current) => ['), 'The conversation must record the prompt only after a successful provider response')
+
 // Recursively inspect source-like files. Excluded directories are generated/dependency trees only.
 const excludedDirectories = new Set(['node_modules', 'dist', '.git', 'coverage'])
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'])
