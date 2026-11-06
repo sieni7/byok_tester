@@ -12,26 +12,26 @@ const { sendNvidiaChatCompletion, NvidiaChatError } = await import(pathToFileURL
 test.after(() => rmSync(tempDir,{recursive:true,force:true}))
 test('sends key, model and prompt to same-origin Netlify proxy and extracts answer', async () => {
  let request
- const answer=await sendNvidiaChatCompletion({apiKey:'test-token',model:'meta/llama-3.1-8b-instruct',prompt:'Bonjour',fetchImpl:async(url,init)=>{request={url,init,body:JSON.parse(init.body)};return new Response(JSON.stringify({choices:[{message:{content:'Bonjour !'}}]}),{status:200})}})
+ const answer=await sendNvidiaChatCompletion({apiKey:'test-token',model:'meta/llama-3.3-70b-instruct',prompt:'Bonjour',fetchImpl:async(url,init)=>{request={url,init,body:JSON.parse(init.body)};return new Response(JSON.stringify({choices:[{message:{content:'Bonjour !'}}]}),{status:200})}})
  assert.equal(answer,'Bonjour !'); assert.equal(request.url,'/.netlify/functions/nvidia-proxy'); assert.equal(request.init.method,'POST')
  assert.equal(request.init.headers['Content-Type'],'application/json'); assert.equal(request.init.headers.Authorization,undefined)
  assert.equal(request.init.credentials,'omit'); assert.equal(request.init.cache,'no-store')
- assert.deepEqual(request.body,{apiKey:'test-token',model:'meta/llama-3.1-8b-instruct',prompt:'Bonjour'})
+ assert.deepEqual(request.body,{apiKey:'test-token',model:'meta/llama-3.3-70b-instruct',prompt:'Bonjour'})
 })
 test('maps authentication, permission, quota and upstream errors',async t=>{
- for(const [status,code] of [[400,'request_failed'],[401,'unauthorized'],[403,'forbidden'],[429,'rate_limit'],[502,'network'],[503,'server'],[504,'timeout']]) await t.test(String(status),async()=>{
-  await assert.rejects(sendNvidiaChatCompletion({apiKey:'test-token',model:'meta/llama-3.1-8b-instruct',prompt:'test',fetchImpl:async()=>new Response('{}',{status})}),e=>e instanceof NvidiaChatError&&e.code===code&&e.status===status)
+ for(const [status,code] of [[400,'request_failed'],[410,'request_failed'],[401,'unauthorized'],[403,'forbidden'],[429,'rate_limit'],[502,'network'],[503,'server'],[504,'timeout']]) await t.test(String(status),async()=>{
+  await assert.rejects(sendNvidiaChatCompletion({apiKey:'test-token',model:'meta/llama-3.3-70b-instruct',prompt:'test',fetchImpl:async()=>new Response('{}',{status})}),e=>e instanceof NvidiaChatError&&e.code===code&&e.status===status)
  })
 })
 test('reports network failures without exposing credentials',async()=>{
- await assert.rejects(sendNvidiaChatCompletion({apiKey:'do-not-leak-this-token',model:'meta/llama-3.1-8b-instruct',prompt:'test',fetchImpl:async()=>{throw new Error('network details')}}),e=>e instanceof NvidiaChatError&&e.code==='network'&&!e.message.includes('do-not-leak'))
+ await assert.rejects(sendNvidiaChatCompletion({apiKey:'do-not-leak-this-token',model:'meta/llama-3.3-70b-instruct',prompt:'test',fetchImpl:async()=>{throw new Error('network details')}}),e=>e instanceof NvidiaChatError&&e.code==='network'&&!e.message.includes('do-not-leak'))
 })
 test('rejects malformed or empty successful responses',async t=>{
  await t.test('invalid JSON',async()=>assert.rejects(sendNvidiaChatCompletion({apiKey:'test',model:'m',prompt:'p',fetchImpl:async()=>new Response('not-json')}),e=>e instanceof NvidiaChatError&&e.code==='invalid_response'))
  await t.test('empty content',async()=>assert.rejects(sendNvidiaChatCompletion({apiKey:'test',model:'m',prompt:'p',fetchImpl:async()=>Response.json({choices:[]})}),e=>e instanceof NvidiaChatError&&e.code==='invalid_response'))
 })
 test('aborts request when timeout is reached',async()=>{
- await assert.rejects(sendNvidiaChatCompletion({apiKey:'test-token',model:'meta/llama-3.1-8b-instruct',prompt:'test',timeoutMs:1,fetchImpl:async(_url,init)=>new Promise((_,reject)=>init.signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true}))}),e=>e instanceof NvidiaChatError&&e.code==='timeout'&&e.message.includes('1 seconde'))
+ await assert.rejects(sendNvidiaChatCompletion({apiKey:'test-token',model:'meta/llama-3.3-70b-instruct',prompt:'test',timeoutMs:1,fetchImpl:async(_url,init)=>new Promise((_,reject)=>init.signal.addEventListener('abort',()=>reject(new Error('aborted')),{once:true}))}),e=>e instanceof NvidiaChatError&&e.code==='timeout'&&e.message.includes('1 seconde'))
 })
 test('rejects empty key or prompt before request',async()=>{
  let called=false; const fetchImpl=async()=>{called=true;return Response.json({})}
