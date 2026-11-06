@@ -2,131 +2,113 @@
 
 > **BYOK control room for modern AI workflows.**
 >
-> Un cockpit local pour connecter, comparer et préparer des appels vers plusieurs fournisseurs IA sans disperser ses clés API.
+> Un cockpit local pour préparer, gérer et tester plusieurs fournisseurs IA depuis un espace unique.
 
-Keydock est une interface React + TypeScript pensée pour les prototypes, les équipes produit et les développeurs qui veulent tester rapidement plusieurs providers LLM depuis un même espace. Le dashboard réunit un playground conversationnel à gauche et un gestionnaire de credentials à droite, dans une interface claire, dense et responsive.
+Keydock est une interface React + TypeScript pour prototypes et expérimentations multi-provider. Le dashboard réunit un playground de démonstration et un gestionnaire de credentials.
 
-> **Statut : v0.2.0-alpha.1.1 corrective — fondations validées** — l’interface est pilotée par le registre, les politiques d’accès sont rattachées aux modèles, et les modes session/local sont explicitement séparés. Aucun provider réel n’est encore appelé.
+> **Statut : v0.2.0-alpha.1.2 corrective.** Le mode session est le comportement par défaut. Le mode local est disponible sur activation explicite. Aucun appel réel à un fournisseur IA n'est encore effectué ; NVIDIA NIM n'est pas intégré.
 
-## Ce que le prototype couvre
+## Périmètre actuel
 
-| Domaine | Fonctionnalités |
+| Domaine | État |
 | --- | --- |
-| **Playground** | Conversation en session, sélection du provider actif, pièces jointes locales, commande microphone et réponses de démonstration. |
-| **API key manager** | Ajout, modification, suppression, copie, masquage/révélation et statut de chaque clé. |
-| **Providers** | OpenRouter en choix recommandé, Groq en fallback haute vitesse, GitHub Models comme option sans friction. |
-| **Sécurité locale** | Aucune clé codée en dur, aucune base de données, aucun envoi tiers effectué par cette interface. |
-| **Déploiement** | SPA statique, build Vite, configuration Netlify prête à l’emploi et manifest de routes Manus. |
+| Playground | Saisie et historique en mémoire ; réponses simulées, sans appel réseau |
+| Gestion des clés | Ajout, modification, suppression, copie et affichage masqué |
+| Providers | OpenRouter, Groq et GitHub Models dans le registre |
+| Politiques d'accès | Rattachées aux modèles ; inconnues tant qu'elles ne sont pas vérifiées |
+| Stockage | Session volatile par défaut ; persistance navigateur facultative |
+| Déploiement | SPA statique, build Vite et configuration Netlify |
+
+Les commandes microphone et pièce jointe sont des éléments d'interface de prototype : le microphone ne réalise pas de transcription et la pièce jointe ne transmet ni n'analyse le contenu du fichier.
 
 ## Providers de départ
 
-### OpenRouter — choix recommandé
-Un endpoint compatible OpenAI pour changer de modèle sans réécrire l’intégration. Keydock le présente comme le meilleur point d’entrée pour expérimenter rapidement avec plusieurs familles de modèles.
+- **OpenRouter** — endpoint compatible OpenAI : `openrouter.ai/api/v1`.
+- **Groq** — endpoint compatible OpenAI : `api.groq.com/openai/v1`.
+- **GitHub Models** — endpoint : `models.inference.ai.azure.com`.
 
-- Endpoint de référence : `openrouter.ai/api/v1`
-- Accès : politique au niveau du modèle ; tarif et quota restent `unknown` tant qu’un modèle, un compte et une source datée n’ont pas été vérifiés
-- Usage conseillé : prototypage polyvalent, comparaison de modèles, itération produit
+La gratuité, les quotas et les tarifs sont propres à chaque modèle et peuvent dépendre du compte et de la date. Keydock ne doit jamais présenter un fournisseur entier comme gratuit sans preuve vérifiée.
 
-### Groq — fallback haute vitesse
-Une option orientée performance lorsque le débit et la latence deviennent prioritaires.
+## Gestion des credentials et sécurité
 
-- Endpoint de référence : `api.groq.com/openai/v1`
-- Accès : politique au niveau du modèle ; ne pas assimiler le provider entier à une offre gratuite
-- Usage conseillé : traitements textuels en volume, benchmarks, boucles de test rapides
+### Mode session — défaut
 
-### GitHub Models — démarrage sans friction
-Une alternative pratique pour les équipes déjà équipées d’un compte GitHub et qui souhaitent expérimenter sans multiplier les comptes fournisseurs.
+- Les clés restent dans l'état mémoire de l'application.
+- Au démarrage, Keydock ne lit pas `localStorage`.
+- Le service de credentials ne sonde, ne lit et n'écrit aucun stockage persistant en mode session.
+- Les clés en mémoire disparaissent au rechargement ou à la fermeture de l'onglet.
 
-- Endpoint de référence : `models.inference.ai.azure.com`
-- Limites : variables selon le modèle et le niveau de quota
-- Usage conseillé : essais ponctuels, projets GitHub-first, découverte de modèles
+### Mode stockage local — opt-in
 
-> Les quotas sont des repères d’interface et peuvent évoluer selon les conditions commerciales de chaque fournisseur. Vérifiez toujours la documentation officielle avant une mise en production.
+L'utilisateur peut sélectionner explicitement le stockage local du navigateur. Les credentials sont alors enregistrés dans `localStorage`.
 
-## Modèle de sécurité actuel
+**Avertissement :** `localStorage` n'est pas un coffre sécurisé ni un stockage chiffré. Toute personne ayant accès au profil du navigateur peut potentiellement lire les valeurs. Ce mode est réservé au prototype local et ne constitue pas une architecture de production.
 
-Keydock adopte une posture **local-first** pour ce prototype :
+Aucune clé réelle ne doit être ajoutée au dépôt, aux exemples, aux captures d'écran ou aux logs. Avant toute mise en production, les appels fournisseurs directs depuis le navigateur devront être réévalués : ils exposent nécessairement la clé au contexte client. Prévoir un proxy serveur/vault avec contrôle d'accès, rotation, journalisation expurgée et limites de débit.
 
-1. Les valeurs saisies sont conservées dans le `localStorage` du navigateur, sous une clé d’application dédiée.
-2. Aucune clé privée n’est présente dans le code source, le dépôt ou les fichiers `.env`.
-3. L’interface ne transmet pas les credentials à une base de données ou à un service de stockage tiers.
-4. Les clés sont masquées par défaut et ne sont copiées que sur action explicite de l’utilisateur.
-5. Le playground actuel simule la préparation d’un prompt ; il ne déclenche pas encore d’appel fournisseur en arrière-plan.
+## Architecture du dépôt
 
-**Important :** `localStorage` n’est pas un coffre chiffré. Toute personne disposant d’un accès au profil navigateur peut potentiellement lire ces valeurs. Pour une version de production, remplacer ce stockage par un vault sécurisé ou un backend de proxy avec rotation, contrôle d’accès, audit, rate limiting et séparation stricte des environnements.
+```text
+src/
+├── app/
+│   └── App.tsx
+├── components/
+├── core/
+│   ├── provider-registry.ts
+│   ├── model-registry.ts
+│   └── access-policy.ts
+├── services/
+│   └── credential-service.ts
+├── types/
+│   └── index.ts
+└── main.tsx
+scripts/
+├── test-credentials.mjs
+└── verify-alpha1.mjs
+public/
+netlify.toml
+package.json
+package-lock.json
+TODO.md
+```
 
-## Stack
+## Prérequis et démarrage
 
-- **React 19** et **TypeScript**
-- **Vite** pour le développement et le bundling
-- CSS natif avec design system léger, responsive et sans dépendance UI lourde
-- `localStorage` pour la persistance locale du prototype
-- Netlify pour la publication statique
-
-## Démarrage local
-
-Prérequis : Node.js 18+ et npm.
+Node.js **20.19+** ou **22.12+** (voir `.nvmrc`) et npm.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Le serveur de développement écoute sur le port `3000` lorsque le runtime Manus est utilisé. Pour produire un build de vérification :
+Build et contrôles :
 
 ```bash
 npm run build
+npm run test:credentials
+npm run verify:alpha1
+git diff --check
 ```
 
-Le résultat est généré dans `dist/`.
+Le build Vite est généré dans `dist/`.
 
-## Déploiement Netlify
+## Roadmap
 
-Le dépôt contient déjà un `netlify.toml` configuré :
+1. **alpha.1.2** — mode session par défaut, tests comportementaux du service de credentials, scanner récursif de secrets et documentation alignée.
+2. **alpha.2** — stabilisation UX et états de gestion des credentials après validation alpha.1.2.
+3. **alpha.3** — première intégration réelle NVIDIA NIM, seulement après validation des fondations.
+4. **beta.1** — chat réel et normalisation des erreurs.
+5. **beta.2** — catalogue de modèles et autres providers.
+6. **rc.1** — comparateur multi-modèles et validation complète.
+7. **v0.2.0** — publication stable après validation humaine.
 
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
-```
+## Principes de contribution
 
-Dans Netlify, sélectionnez le dépôt GitHub, conservez ces valeurs puis lancez le premier déploiement. La redirection SPA `/* → /index.html` est incluse pour préserver le dashboard sur les routes côté client.
-
-### Checklist avant publication
-
-- Remplacer le stockage `localStorage` par une stratégie de secrets adaptée au modèle de menace.
-- Ajouter une Content Security Policy et vérifier les domaines autorisés pour les polices et futures API.
-- Ne jamais ajouter de clé réelle dans le dépôt, les logs, les screenshots ou les variables publiques du frontend.
-- Brancher les appels fournisseurs via un proxy serveur si les clés ne doivent pas être exposées au navigateur.
-- Vérifier les conditions, quotas et politiques de rétention propres à chaque provider.
-
-## Structure du projet
-
-```text
-.
-├── src/
-│   ├── main.tsx          # application React, état local et interactions
-│   └── styles.css        # design system et responsive layout
-├── public/
-│   └── manus-routes.json # routes déclarées au runtime
-├── netlify.toml          # build et fallback SPA Netlify
-├── app.config.ts         # métadonnées du projet
-└── TODO.md               # état des objectifs produit
-```
-
-## Roadmap proposée
-
-La série v0.2 est livrée par étapes : `alpha.1` socle initial, `alpha.1.1` corrective et fondations validées, `alpha.2` extension du credential UX, `alpha.3` premier appel NVIDIA NIM, `beta.1` chat réel et erreurs normalisées, `beta.2` catalogue multi-provider, `rc.1` comparateur et validation, puis `v0.2.0` stable.
-
-- Connecter le chat à un proxy sécurisé et à des modèles réels.
-- Ajouter un coffre chiffré, la rotation et la révocation des credentials.
-- Ajouter un historique de requêtes opt-in avec redaction des secrets.
-- Ajouter la sélection de modèles par provider et un comparateur de latence/coût.
-- Ajouter des tests de composants et une CI de build sur le dépôt GitHub.
-
-## Contribution
-
-Les contributions doivent préserver les principes suivants : pas de secrets dans le code, pas de télémétrie implicite sur les prompts, composants lisibles, interactions clavier accessibles et dégradation propre sur mobile.
+- Aucun secret dans le code ou l'historique Git.
+- Pas de fausse indication de disponibilité, de gratuité ou de quota.
+- Pas d'appel réseau présenté comme fonctionnel s'il est simulé.
+- Préserver une architecture progressive et vérifiable.
+- Toute intégration réelle doit être testée et auditée avant activation.
 
 ## Licence
 
