@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { providers } from '../core/provider-registry'
 import { loadCredentials, saveCredentials } from '../services/credential-service'
+import { sendNvidiaChatCompletion } from '../services/nvidia-chat-service'
+import { nvidiaModels } from '../core/nvidia-models'
 import type { CredentialStorageMode } from '../services/credential-service'
 import type { ChatMessage, Provider, ProviderId } from '../types'
 
@@ -9,14 +11,14 @@ const initialMessages: ChatMessage[] = [
   {
     id: 1,
     role: 'assistant',
-    text: 'Bonjour, je suis votre copilote local. Choisissez une clé à gauche, puis lancez votre premier prompt.',
+    text: 'Bienvenue dans Keydock alpha.3. NVIDIA NIM est le premier fournisseur réellement connecté. Ajoutez votre clé NVIDIA, puis envoyez un prompt.',
     meta: 'Keydock assistant · maintenant',
   },
   {
     id: 2,
     role: 'assistant',
-    text: 'Vos identifiants restent dans ce navigateur. Rien n’est envoyé tant que vous n’avez pas branché votre intégration.',
-    meta: 'Sécurité locale activée',
+    text: 'Votre prompt est envoyé directement à NVIDIA NIM ; cette alpha prend en charge une requête texte ponctuelle.',
+    meta: 'NVIDIA NIM · requête directe à la demande',
   },
 ]
 
@@ -46,7 +48,7 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 function App() {
   const [storageMode, setStorageMode] = useState<CredentialStorageMode>('session')
   const [keys, setKeys] = useState<Record<ProviderId, string>>(() => loadCredentials('session'))
-  const [activeProvider, setActiveProvider] = useState<ProviderId>('openrouter')
+  const [activeProvider, setActiveProvider] = useState<ProviderId>('nvidia')
   const [openEditor, setOpenEditor] = useState<ProviderId | null>(null)
   const [draftKey, setDraftKey] = useState('')
   const [revealed, setRevealed] = useState<Set<ProviderId>>(new Set())
@@ -60,6 +62,8 @@ function App() {
   const [draftMessage, setDraftMessage] = useState('')
   const [attachedFile, setAttachedFile] = useState<string | null>(null)
   const [isListening, setIsListening] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const configuredCount = useMemo(() => providers.filter((provider) => Boolean(keys[provider.id])).length, [keys])
 
   useEffect(() => {
@@ -135,14 +139,49 @@ function App() {
     if (file) setAttachedFile(file.name)
   }
 
-  const handleSend = (event: FormEvent) => {
+  const handleSend = async (event: FormEvent) => {
     event.preventDefault()
+    if (isSending) return
     const text = draftMessage.trim()
     if (!text && !attachedFile) return
+    if (activeProvider === 'nvidia' && !keys.nvidia) {
+      setSendError('Ajoutez une clé NVIDIA NIM dans le gestionnaire de clés avant l’envoi.')
+      return
+    }
+    if (activeProvider === 'nvidia' && attachedFile) {
+      setSendError('Les pièces jointes ne sont pas prises en charge par cette première intégration NVIDIA. Retirez le fichier pour continuer.')
+      return
+    }
+
     const submittedText = text || `Fichier joint : ${attachedFile}`
+    setSendError(null)
     setMessages((current) => [...current, { id: Date.now(), role: 'user', text: submittedText }])
     setDraftMessage('')
     setAttachedFile(null)
+
+    if (activeProvider === 'nvidia') {
+      setIsSending(true)
+      try {
+        const model = nvidiaModels[0]!
+        const response = await sendNvidiaChatCompletion({
+          apiKey: keys.nvidia,
+          prompt: text,
+          model: model.id,
+        })
+        setMessages((current) => [...current, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          text: response,
+          meta: `NVIDIA NIM · ${model.label}`,
+        }])
+      } catch (error) {
+        setSendError(error instanceof Error ? error.message : 'Une erreur inattendue est survenue pendant l’appel NVIDIA.')
+      } finally {
+        setIsSending(false)
+      }
+      return
+    }
+
     window.setTimeout(() => {
       const provider = providers.find((item) => item.id === activeProvider) ?? fallbackProvider
       const response = keys[activeProvider]
@@ -204,12 +243,12 @@ function App() {
 
         <section className="intro-row">
           <div>
-            <div className="eyebrow"><span className="eyebrow-line" /> YOUR AI CONTROL ROOM</div>
-            <h1>One key.<br /><em>Every model.</em></h1>
-            <p className="intro-copy">Un espace calme pour brancher, tester et gérer vos fournisseurs IA — sans éparpiller vos secrets.</p>
+            <div className="eyebrow"><span className="eyebrow-line" /> KEYDOCK · ALPHA.3</div>
+            <h1>NVIDIA NIM.<br /><em>First, for real.</em></h1>
+            <p className="intro-copy">Le premier parcours réel de Keydock : tester NVIDIA NIM avec votre propre clé, dans un environnement BYOK.</p>
           </div>
           <div className="intro-stats">
-            <div className="stat-block"><strong>{configuredCount}<small>/ {providers.length}</small></strong><span>providers ready</span></div>
+            <div className="stat-block"><strong>{configuredCount}<small>/ {providers.length}</small></strong><span>clés enregistrées</span></div>
             <div className="stat-divider" />
             <div className="stat-block"><strong>{storageMode === 'session' ? 'RAM' : '100%'}</strong><span>{storageMode === 'session' ? 'volatile session' : 'local storage'}</span></div>
           </div>
@@ -218,15 +257,12 @@ function App() {
         <div className="dashboard-grid">
           <section className="chat-card" aria-labelledby="chat-title">
             <div className="chat-card-head">
-              <div><div className="section-kicker light"><span className="pulse-dot" /> PLAYGROUND</div><h2 id="chat-title">Try your setup</h2></div>
+              <div><div className="section-kicker light"><span className="pulse-dot" /> FOURNISSEUR ACTIF · ALPHA.3</div><h2 id="chat-title">Tester NVIDIA NIM</h2></div>
               <button className="small-control" type="button"><span className="status-dot" /> Session active <Icon name="chevron" size={13} /></button>
             </div>
             <div className="chat-context">
               <div className="mini-model-icon">{configuredProvider?.shortName}</div>
-              <div><span>Active provider</span><strong>{configuredProvider?.name}</strong></div>
-              <select aria-label="Choisir le fournisseur actif" value={activeProvider} onChange={(event) => setActiveProvider(event.target.value as ProviderId)}>
-                {providers.map((provider) => <option value={provider.id} key={provider.id}>{provider.name}{keys[provider.id] ? ' · ready' : ''}</option>)}
-              </select>
+              <div><span>Premier fournisseur réellement intégré</span><strong>{configuredProvider?.name} · {nvidiaModels[0]?.label}</strong></div><span className="provider-live-label">ACTIF</span>
             </div>
             <div className="messages" aria-live="polite">
               {messages.map((message) => (
@@ -236,23 +272,25 @@ function App() {
                 </div>
               ))}
             </div>
+            {sendError && <div className="chat-error" role="alert">{sendError}</div>}
+            {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion réelle NVIDIA NIM · votre prompt et votre clé sont transmis directement à NVIDIA. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
             <form className="composer" onSubmit={handleSend}>
               {attachedFile && <div className="attachment-chip"><Icon name="paperclip" size={14} /> {attachedFile}<button type="button" onClick={() => setAttachedFile(null)} aria-label="Retirer la pièce jointe">×</button></div>}
-              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder="Ask anything about your setup..." rows={2} aria-label="Votre message" />
+              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ask anything about your setup...'} rows={2} aria-label="Votre message" disabled={isSending} />
               <div className="composer-actions">
                 <div className="composer-tools">
                   <label className="tool-button" aria-label="Joindre un fichier"><Icon name="paperclip" size={17} /><input type="file" onChange={handleFile} /></label>
                   <button className={`tool-button ${isListening ? 'listening' : ''}`} type="button" aria-label="Activer le microphone" onClick={() => setIsListening((value) => !value)}><Icon name="mic" size={17} /></button>
                   <span className="tool-hint">{isListening ? 'Listening...' : '⌘ + Enter to run'}</span>
                 </div>
-                <button className="send-button" type="submit" aria-label="Envoyer"><Icon name="arrow" size={18} /></button>
+                <button className="send-button" type="submit" aria-label="Envoyer" disabled={isSending}>{isSending ? '…' : <Icon name="arrow" size={18} />}</button>
               </div>
             </form>
             <div className="chat-footnote"><Icon name="shield" size={13} /> Messages are not stored outside this session</div>
           </section>
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
-            <div className="keys-head"><div><div className="section-kicker">YOUR PROVIDERS</div><h2 id="keys-title">API key manager</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
+            <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
             <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
             <div className="credential-mode-section">
               <div className="storage-mode-heading"><strong>How should Keydock keep your API keys?</strong><span>Choose where credentials are kept. You can change this at any time.</span></div>
@@ -271,7 +309,7 @@ function App() {
               ? <p className="storage-feedback session" role="status">Session mode active: no credentials are read from or written to persistent browser storage.</p>
               : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Échec de sauvegarde : le navigateur bloque ou ne permet pas le stockage local. Vos clés ne sont pas persistées.' : storageFeedback === 'saved' ? 'Sauvegarde locale confirmée.' : 'Vérification du stockage local…'}</p>}
             <div className="provider-list">
-              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
+              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
             <p className="security-caption">* Local browser storage is not a secure vault. Session mode is volatile and writes nothing to the credentials store.</p>
           </section>
@@ -285,6 +323,7 @@ type ProviderCardProps = {
   provider: Provider
   value: string
   isActive: boolean
+  isOperational: boolean
   isOpen: boolean
   draftKey: string
   revealed: boolean
@@ -300,14 +339,14 @@ type ProviderCardProps = {
   onDelete: () => void
 }
 
-function ProviderCard({ provider, value, isActive, isOpen, draftKey, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
+function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
   const hasKey = Boolean(value)
   const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'No key connected'
   return (
-    <article className={`provider-card ${provider.id === 'openrouter' ? 'featured' : ''} ${isActive ? 'active' : ''}`}>
-      <div className="provider-topline"><div className={`provider-logo ${provider.accent}`}>{provider.shortName}</div><div className="provider-title"><div><h3>{provider.name}</h3>{provider.id === 'openrouter' && <span className="recommendation">{provider.badge}</span>}</div><span>{provider.family}</span></div><button className={`active-toggle ${isActive ? 'selected' : ''}`} type="button" onClick={onActivate} aria-label={`Définir ${provider.name} comme fournisseur actif`}><span />{isActive ? 'Active' : 'Set active'}</button></div>
+    <article className={`provider-card ${isOperational ? 'featured operational' : 'coming-soon'} ${isActive ? 'active' : ''}`}>
+      <div className="provider-topline"><div className={`provider-logo ${provider.accent}`}>{provider.shortName}</div><div className="provider-title"><div><h3>{provider.name}</h3><span className={isOperational ? 'recommendation' : 'coming-soon-badge'}>{provider.badge}</span></div><span>{provider.family}</span></div>{isOperational ? <span className="active-toggle selected"><span />Opérationnel</span> : <span className="active-toggle coming-soon-toggle">À venir</span>}</div>
       <p className="provider-description">{provider.description}</p>
-      <div className="provider-metrics"><div><strong>Model-level</strong><span>access policy</span></div><div><strong className="endpoint-text">{provider.endpoint}</strong><span>OpenAI-compatible endpoint</span></div></div>
+      <div className="provider-metrics"><div><strong>Model-level</strong><span>access policy</span></div><div><strong className="endpoint-text">{provider.endpoint}</strong><span>API endpoint</span></div></div>
       <div className={`key-row ${hasKey ? 'connected' : ''}`}>
         <div className="key-status"><span className="key-status-dot" /><div><span className="key-label">API key</span><strong>{masked}</strong></div></div>
         <div className="key-actions">
