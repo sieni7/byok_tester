@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent, FormEvent, ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { providers } from '../core/provider-registry'
 import { loadCredentials, saveCredentials } from '../services/credential-service'
 import { sendNvidiaChatCompletion } from '../services/nvidia-chat-service'
@@ -55,15 +55,16 @@ function App() {
   const [copied, setCopied] = useState<ProviderId | null>(null)
   const [copyError, setCopyError] = useState<ProviderId | null>(null)
   const [storageFeedback, setStorageFeedback] = useState<'saved' | 'error' | null>(null)
+  const [keyEditorError, setKeyEditorError] = useState<string | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [draftMessage, setDraftMessage] = useState('')
-  const [attachedFile, setAttachedFile] = useState<string | null>(null)
-  const [isListening, setIsListening] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [sendFeedback, setSendFeedback] = useState<string | null>(null)
+  const sendingLock = useRef(false)
   const configuredCount = useMemo(() => Number(Boolean(keys.nvidia)), [keys.nvidia])
 
   useEffect(() => {
@@ -91,22 +92,37 @@ function App() {
     setKeys(loadCredentials(mode))
     setOpenEditor(null)
     setDraftKey('')
+    setKeyEditorError(null)
     setRevealed(new Set())
   }
 
   const beginEdit = (provider: ProviderId) => {
     setOpenEditor(provider)
     setDraftKey(keys[provider])
+    setKeyEditorError(null)
   }
 
   const saveKey = () => {
     if (!openEditor) return
-    setKeys((current) => ({ ...current, [openEditor]: draftKey.trim() }))
+    const normalizedKey = draftKey.trim()
+    if (!normalizedKey) {
+      setKeyEditorError('Saisissez une clé API avant de l’enregistrer. Pour retirer une clé existante, utilisez « Supprimer ».')
+      return
+    }
+    if (keys[openEditor] && keys[openEditor] !== normalizedKey) {
+      const confirmed = window.confirm('Remplacer la clé actuellement enregistrée dans Keydock ? La nouvelle clé remplacera uniquement la copie conservée par cette application.')
+      if (!confirmed) return
+    }
+    setKeys((current) => ({ ...current, [openEditor]: normalizedKey }))
     setOpenEditor(null)
     setDraftKey('')
+    setKeyEditorError(null)
   }
 
   const deleteKey = (provider: ProviderId) => {
+    if (!keys[provider]) return
+    const confirmed = window.confirm('Supprimer la copie de cette clé conservée dans Keydock ? Cette action ne révoque pas la clé auprès du fournisseur. Pour la rendre inutilisable, révoquez-la aussi depuis le compte NVIDIA.')
+    if (!confirmed) return
     setKeys((current) => ({ ...current, [provider]: '' }))
     if (activeProvider === provider) setActiveProvider(fallbackProvider.id)
   }
@@ -134,61 +150,61 @@ function App() {
     }
   }
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) setAttachedFile(file.name)
-  }
-
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
-    if (isSending) return
+    if (sendingLock.current || isSending) return
+
+    const text = draftMessage.trim()
+    if (!text) {
+      setSendError('Saisissez un prompt avant de lancer le test.')
+      setSendFeedback(null)
+      return
+    }
     if (activeProvider !== 'nvidia') {
       setSendError('Ce fournisseur n’est pas encore disponible. Seul NVIDIA NIM peut être testé actuellement.')
+      setSendFeedback(null)
       return
     }
-    const text = draftMessage.trim()
-    if (!text && !attachedFile) return
-    if (activeProvider === 'nvidia' && !keys.nvidia) {
+    if (!keys.nvidia) {
       setSendError('Ajoutez une clé NVIDIA NIM dans le gestionnaire de clés avant l’envoi.')
+      setSendFeedback(null)
       return
     }
-    if (activeProvider === 'nvidia' && attachedFile) {
-      setSendError('Les pièces jointes ne sont pas prises en charge par cette première intégration NVIDIA. Retirez le fichier pour continuer.')
-      return
-    }
-
-    const submittedText = text || `Fichier joint : ${attachedFile}`
+    sendingLock.current = true
+    setIsSending(true)
     setSendError(null)
-    setMessages((current) => [...current, { id: Date.now(), role: 'user', text: submittedText }])
-    setDraftMessage('')
-    setAttachedFile(null)
+    setSendFeedback(null)
 
-    if (activeProvider === 'nvidia') {
-      setIsSending(true)
-      try {
-        const model = nvidiaModels[0]!
-        const response = await sendNvidiaChatCompletion({
-          apiKey: keys.nvidia,
-          prompt: text,
-          model: model.id,
-        })
-        setMessages((current) => [...current, {
-          id: Date.now() + 1,
+    try {
+      const model = nvidiaModels[0]!
+      const response = await sendNvidiaChatCompletion({
+        apiKey: keys.nvidia,
+        prompt: text,
+        model: model.id,
+      })
+      const requestId = Date.now()
+      setMessages((current) => [
+        ...current,
+        { id: requestId, role: 'user', text },
+        {
+          id: requestId + 1,
           role: 'assistant',
           text: response,
-          meta: `NVIDIA NIM · ${model.label}`,
-        }])
-      } catch (error) {
-        setSendError(error instanceof Error ? error.message : 'Une erreur inattendue est survenue pendant l’appel NVIDIA.')
-      } finally {
-        setIsSending(false)
-      }
-      return
+          meta: 'NVIDIA NIM · ' + model.label,
+        },
+      ])
+      setSendFeedback('Réponse reçue de NVIDIA NIM. Votre prompt est conservé : vous pouvez le modifier ou le renvoyer.')
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : 'Une erreur inattendue est survenue pendant l’appel NVIDIA.')
+    } finally {
+      sendingLock.current = false
+      setIsSending(false)
     }
   }
 
   return (
     <div className="app-shell" data-theme={theme}>
+      <a className="skip-link" href="#main-content">Aller au contenu principal</a>
       <aside className="sidebar">
         <div className="brand-lockup">
           <div className="brand-mark"><span /><span /><span /><span /></div>
@@ -209,11 +225,9 @@ function App() {
 
         <nav className="main-nav" aria-label="Navigation principale">
           <p className="nav-label">Workspace</p>
-          <a className="nav-item active" href="#dashboard"><Icon name="grid" /><span>Dashboard</span><span className="nav-count">01</span></a>
-          <a className="nav-item" href="#providers"><Icon name="key" /><span>API keys</span><span className="nav-count live">{configuredCount}</span></a>
-          <a className="nav-item" href="#docs"><Icon name="book" /><span>Docs & guides</span><Icon name="external" size={14} /></a>
-          <p className="nav-label nav-label-spaced">System</p>
-          <a className="nav-item" href="#settings"><Icon name="settings" /><span>Settings</span></a>
+          <a className="nav-item active" href="#chat-title"><Icon name="grid" /><span>Test NVIDIA</span><span className="nav-count">01</span></a>
+          <a className="nav-item" href="#providers"><Icon name="key" /><span>Clés API</span><span className="nav-count live">{configuredCount}</span></a>
+          <a className="nav-item" href="#settings"><Icon name="settings" /><span>Confidentialité</span></a>
         </nav>
 
         <div className="sidebar-bottom">
@@ -225,15 +239,16 @@ function App() {
         </div>
       </aside>
 
-      <main className="workspace" id="dashboard">
+      <main className="workspace" id="main-content" tabIndex={-1}>
         <header className="topbar">
           <div className="crumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
+          <nav className="mobile-nav" aria-label="Accès rapide"><a href="#chat-title">Test</a><a href="#providers">Clés API</a><a href="#settings">Confidentialité</a></nav>
           <div className="topbar-actions">
-            <div className="sync-status"><i /> {storageMode === 'session' ? 'session only · volatile' : storageFeedback === 'error' ? 'local save unavailable' : 'local browser storage'}</div>
+            <div className="sync-status"><i /> {storageMode === 'session' ? 'session · volatile' : storageFeedback === 'error' ? 'stockage local indisponible' : 'stockage local du navigateur'}</div>
             <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} aria-pressed={theme === 'dark'}>
               {theme === 'dark' ? '☀ Mode clair' : '☾ Mode sombre'}
             </button>
-            <button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button>
+
           </div>
         </header>
 
@@ -254,13 +269,13 @@ function App() {
           <section className="chat-card" aria-labelledby="chat-title">
             <div className="chat-card-head">
               <div><div className="section-kicker light"><span className="pulse-dot" /> FOURNISSEUR ACTIF · ALPHA.3</div><h2 id="chat-title">Tester NVIDIA NIM</h2></div>
-              <button className="small-control" type="button"><span className="status-dot" /> Session active <Icon name="chevron" size={13} /></button>
+              <span className="small-control" aria-label="État du fournisseur : NVIDIA NIM opérationnel"><span className="status-dot" /> NVIDIA opérationnel</span>
             </div>
             <div className="chat-context">
               <div className="mini-model-icon">{configuredProvider?.shortName}</div>
               <div><span>Premier fournisseur réellement intégré</span><strong>{configuredProvider?.name} · {nvidiaModels[0]?.label}</strong></div><span className="provider-live-label">ACTIF</span>
             </div>
-            <div className="messages" aria-live="polite">
+            <div className="messages" role="log" aria-label="Échanges avec NVIDIA NIM" aria-live="polite" aria-relevant="additions">
               {messages.map((message) => (
                 <div className={`message-row ${message.role}`} key={message.id}>
                   {message.role === 'assistant' && <div className="assistant-avatar"><span /><span /><span /></div>}
@@ -268,46 +283,42 @@ function App() {
                 </div>
               ))}
             </div>
-            {sendError && <div className="chat-error" role="alert">{sendError}</div>}
+            {sendError && <div className="chat-error" role="alert">{sendError}</div>}{sendFeedback && <div className="chat-success" role="status">{sendFeedback}</div>}{isSending && <div className="chat-loading" role="status">NVIDIA NIM traite votre demande…</div>}
             {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion réelle NVIDIA NIM · votre prompt et votre clé sont transmis directement à NVIDIA. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
             <form className="composer" onSubmit={handleSend}>
-              {attachedFile && <div className="attachment-chip"><Icon name="paperclip" size={14} /> {attachedFile}<button type="button" onClick={() => setAttachedFile(null)} aria-label="Retirer la pièce jointe">×</button></div>}
-              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ask anything about your setup...'} rows={2} aria-label="Votre message" disabled={isSending} />
+              <textarea value={draftMessage} onChange={(event) => { setDraftMessage(event.target.value); setSendError(null); setSendFeedback(null) }} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Prompt à envoyer à NVIDIA NIM" aria-invalid={Boolean(sendError)} aria-describedby="prompt-help" disabled={isSending} onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); if (!isSending && draftMessage.trim()) event.currentTarget.form?.requestSubmit() } }} />
               <div className="composer-actions">
-                <div className="composer-tools">
-                  <label className="tool-button" aria-label="Joindre un fichier"><Icon name="paperclip" size={17} /><input type="file" onChange={handleFile} /></label>
-                  <button className={`tool-button ${isListening ? 'listening' : ''}`} type="button" aria-label="Activer le microphone" onClick={() => setIsListening((value) => !value)}><Icon name="mic" size={17} /></button>
-                  <span className="tool-hint">{isListening ? 'Listening...' : '⌘ + Enter to run'}</span>
-                </div>
-                <button className="send-button" type="submit" aria-label="Envoyer" disabled={isSending}>{isSending ? '…' : <Icon name="arrow" size={18} />}</button>
+                <span className="tool-hint">Ctrl + Entrée (ou ⌘ + Entrée) pour tester</span>
+                <button className="send-button" type="submit" aria-label={isSending ? 'Envoi en cours' : 'Envoyer le prompt à NVIDIA NIM'} disabled={isSending || !draftMessage.trim()}>{isSending ? 'Envoi…' : <Icon name="arrow" size={18} />}</button>
               </div>
             </form>
-            <div className="chat-footnote"><Icon name="shield" size={13} /> Messages are not stored outside this session</div>
+            <p className="sr-only" id="prompt-help">Saisissez un prompt. Ctrl et Entrée, ou Commande et Entrée sur Mac, lance le test.</p>
+            <div className="chat-footnote"><Icon name="shield" size={13} /> Les échanges restent dans cette session de navigateur.</div>
           </section>
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
-            <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
-            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
-            <div className="credential-mode-section">
-              <div className="storage-mode-heading"><strong>How should Keydock keep your API keys?</strong><span>Choose where credentials are kept. You can change this at any time.</span></div>
+            <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Ajouter une clé</button></div>
+            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'En mémoire · effacée au rechargement' : 'Enregistrée dans ce navigateur'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session temporaire' : 'stockage local*'}</div></div>
+            <div className="credential-mode-section" id="settings">
+              <div className="storage-mode-heading"><strong>Où conserver votre clé API ?</strong><span>Choisissez le mode de conservation. Vous pourrez en changer à tout moment.</span></div>
               <div className="credential-mode-options" role="group" aria-label="Mode de conservation des identifiants">
                 <button type="button" className={`credential-mode-option ${storageMode === 'session' ? 'selected' : ''}`} aria-pressed={storageMode === 'session'} onClick={() => changeStorageMode('session')}>
-                  <span className="mode-option-title">Session only <span className="mode-recommended">Recommended</span></span>
-                  <span className="mode-option-description">Kept in memory only. Keys are cleared when you reload or close this tab. Nothing is written to browser storage.</span>
+                  <span className="mode-option-title">Session uniquement <span className="mode-recommended">Recommandé</span></span>
+                  <span className="mode-option-description">La clé reste en mémoire vive. Elle disparaît au rechargement ou à la fermeture de l’onglet. Rien n’est écrit dans le stockage persistant du navigateur.</span>
                 </button>
                 <button type="button" className={`credential-mode-option ${storageMode === 'local' ? 'selected' : ''}`} aria-pressed={storageMode === 'local'} onClick={() => changeStorageMode('local')}>
-                  <span className="mode-option-title">Local browser storage</span>
-                  <span className="mode-option-description">Keeps keys in this browser between visits. This is convenient, but localStorage is not encrypted or a secure vault.</span>
+                  <span className="mode-option-title">Stockage local du navigateur</span>
+                  <span className="mode-option-description">La clé est conservée dans le localStorage de ce navigateur entre les visites. Ce stockage n’est pas chiffré et ne constitue pas un coffre-fort sécurisé.</span>
                 </button>
               </div>
             </div>
             {storageMode === 'session'
-              ? <p className="storage-feedback session" role="status">Session mode active: no credentials are read from or written to persistent browser storage.</p>
-              : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Échec de sauvegarde : le navigateur bloque ou ne permet pas le stockage local. Vos clés ne sont pas persistées.' : storageFeedback === 'saved' ? 'Sauvegarde locale confirmée.' : 'Vérification du stockage local…'}</p>}
+              ? <p className="storage-feedback session" role="status">Mode session actif : aucune clé n’est lue depuis ou écrite dans le stockage persistant du navigateur.</p>
+              : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role={storageFeedback === 'error' ? 'alert' : 'status'}>{storageFeedback === 'error' ? 'Stockage local indisponible : le navigateur bloque l’accès à localStorage. La clé reste utilisable en mémoire dans cet onglet, mais elle ne sera pas conservée après rechargement. Vous pouvez repasser en mode session.' : storageFeedback === 'saved' ? 'Enregistrement local confirmé dans ce navigateur. Attention : la clé n’est pas chiffrée.' : 'Vérification du stockage local…'}</p>}
             <div className="provider-list">
-              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
+              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} keyEditorError={keyEditorError} storageMode={storageMode} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={(value) => { setDraftKey(value); setKeyEditorError(null) }} onSave={saveKey} onCancel={() => { setOpenEditor(null); setKeyEditorError(null) }} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
-            <p className="security-caption">* Local browser storage is not a secure vault. Session mode is volatile and writes nothing to the credentials store.</p>
+            <p className="security-caption">Le mode session est temporaire : aucune clé n’est lue depuis ou écrite dans le stockage persistant. Le mode local utilise le localStorage du navigateur, sans chiffrement. Supprimer une clé ici ne la révoque pas chez NVIDIA.</p>
           </section>
         </div>
       </main>
@@ -322,6 +333,8 @@ type ProviderCardProps = {
   isOperational: boolean
   isOpen: boolean
   draftKey: string
+  keyEditorError: string | null
+  storageMode: CredentialStorageMode
   revealed: boolean
   copied: boolean
   copyError: boolean
@@ -335,7 +348,7 @@ type ProviderCardProps = {
   onDelete: () => void
 }
 
-function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
+function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, keyEditorError, storageMode, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
   if (!isOperational) {
     return (
       <article className="provider-card coming-soon" aria-disabled="true">
@@ -350,7 +363,7 @@ function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftK
     )
   }
   const hasKey = Boolean(value)
-  const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'No key connected'
+  const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'Aucune clé connectée'
   return (
     <article className={`provider-card ${isOperational ? 'featured operational' : 'coming-soon'} ${isActive ? 'active' : ''}`}>
       <div className="provider-topline"><div className={`provider-logo ${provider.accent}`}>{provider.shortName}</div><div className="provider-title"><div><h3>{provider.name}</h3><span className={isOperational ? 'recommendation' : 'coming-soon-badge'}>{provider.badge}</span></div><span>{provider.family}</span></div>{isOperational ? <span className="active-toggle selected"><span />Opérationnel</span> : <span className="active-toggle coming-soon-toggle">À venir</span>}</div>
@@ -360,13 +373,13 @@ function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftK
         <div className="key-status"><span className="key-status-dot" /><div><span className="key-label">API key</span><strong>{masked}</strong></div></div>
         <div className="key-actions">
           {hasKey && <><button type="button" className="plain-icon" onClick={onReveal} aria-label={revealed ? 'Masquer la clé' : 'Révéler la clé'}><Icon name={revealed ? 'eyeOff' : 'eye'} size={16} /></button><button type="button" className="plain-icon" onClick={onCopy} aria-label="Copier la clé"><Icon name="copy" size={16} /></button></>}
-          <button type="button" className="edit-key" onClick={onEdit}>{hasKey ? 'Edit' : 'Connect'} <Icon name="arrow" size={14} /></button>
+          <button type="button" className="edit-key" onClick={onEdit}>{hasKey ? 'Modifier' : 'Connecter'} <Icon name="arrow" size={14} /></button>
           {hasKey && <button type="button" className="plain-icon delete" onClick={onDelete} aria-label="Supprimer la clé"><Icon name="trash" size={15} /></button>}
         </div>
       </div>
       {copied && <div className="copied-toast" role="status">Copié dans le presse-papiers</div>}
       {copyError && <div className="copy-error" role="alert">Copie impossible. Vérifiez les autorisations du navigateur ou utilisez la sélection manuelle.</div>}
-      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Paste your {provider.name} key</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus value={draftKey} onChange={(event) => onDraft(event.target.value)} placeholder="sk-..." /><button type="button" onClick={onSave}>Save</button></div><div className="editor-actions"><span>Stored in current credential mode</span><button type="button" onClick={onCancel}>Cancel</button></div></div>}
+      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Clé API {provider.name}</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus autoComplete="off" spellCheck={false} value={draftKey} onChange={(event) => { onDraft(event.target.value) }} placeholder="Collez votre clé API NVIDIA" aria-invalid={Boolean(keyEditorError)} aria-describedby={keyEditorError ? `${provider.id}-key-error` : undefined} /><button type="button" onClick={onSave}>Enregistrer</button></div>{keyEditorError && <p className="key-editor-error" id={`${provider.id}-key-error`} role="alert">{keyEditorError}</p>}<div className="editor-actions"><span>{'Conservation : '}{storageMode === 'session' ? 'session temporaire' : 'stockage local du navigateur'}</span><button type="button" onClick={onCancel}>Annuler</button></div></div>}
     </article>
   )
 }
