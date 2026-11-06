@@ -4,9 +4,9 @@
 
 - [x] `v0.2.0-alpha.1` : socle React/TypeScript, dépendances verrouillées, types communs et registres.
 - [x] `v0.2.0-alpha.1.1 corrective` : UI pilotée par le registre, politiques d'accès au niveau modèle, séparation initiale session/local.
-- [ ] `v0.2.0-alpha.1.2 corrective` (implémentation poussée, validation indépendante en attente) : mode session par défaut sans lecture/écriture de stockage persistant ; tests comportementaux instrumentés ; scanner récursif des sources ; README et TODO alignés.
-- [ ] Validation indépendante alpha.1.2 : `npm run test:credentials`, `npm run verify:alpha1`, `npm run build`, `git diff --check`, revue du diff et du Preview.
-- [ ] `v0.2.0-alpha.2` : stabiliser l'UX credentials et les états de stockage après validation alpha.1.2.
+- [x] `v0.2.0-alpha.1.2 corrective` : mode session par défaut sans accès au stockage persistant ; tests comportementaux ; scanner récursif des sources ; garde-fous de changement de mode ; retours de stockage et presse-papiers ; thème clair/sombre ; CI verte avant fusion.
+- [x] Validation CI alpha.1.2 : `npm ci`, `npm run test:credentials`, `npm run verify:alpha1`, `npm run build`, `git diff --check`.
+- [ ] `v0.2.0-alpha.2` : choix session/local présenté comme deux options lisibles ; conséquences de chaque mode expliquées ; mode actif accessible (`aria-pressed`) ; retour d'état session/local ; confirmation de bascule préservée ; tests structurels et build.
 - [ ] `v0.2.0-alpha.3` : intégrer NVIDIA NIM pour un premier appel texte réel, uniquement après validation du socle.
 - [ ] `v0.2.0-beta.1` : remplacer les réponses simulées par un chat réel et normaliser les erreurs.
 - [ ] `v0.2.0-beta.2` : compléter les providers et le catalogue de modèles.
@@ -32,6 +32,7 @@
 - [x] Ajout, modification, suppression, copie et masquage/révélation des clés.
 - [x] Mode session volatil par défaut : aucun accès à localStorage au démarrage.
 - [x] Mode local facultatif avec avertissement explicite sur l'absence de chiffrement.
+- [ ] Choix de mode présenté sous forme de deux cartes accessibles et descriptives ; session recommandée par défaut.
 - [x] Confirmation avant basculement susceptible de remplacer les clés visibles en mémoire.
 - [x] Retour d'état explicite si l'enregistrement local réussit ou échoue.
 - [x] Copie presse-papiers avec gestion des API absentes et des refus d'autorisation.
