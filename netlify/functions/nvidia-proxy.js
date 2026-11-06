@@ -1,5 +1,5 @@
 const NVIDIA_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions'
-const ALLOWED_MODELS = new Set(['meta/llama-3.1-8b-instruct'])
+const ALLOWED_MODELS = new Set(['meta/llama-3.3-70b-instruct'])
 const MAX_BODY_BYTES = 32 * 1024
 const MAX_API_KEY_LENGTH = 4096
 const MAX_PROMPT_BYTES = 24 * 1024
