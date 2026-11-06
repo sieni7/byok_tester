@@ -254,8 +254,22 @@ function App() {
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
             <div className="keys-head"><div><div className="section-kicker">YOUR PROVIDERS</div><h2 id="keys-title">API key manager</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
             <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
-            <div className="storage-mode-row"><span>Credential mode</span><select aria-label="Choisir le mode de stockage" value={storageMode} onChange={(event) => changeStorageMode(event.target.value as CredentialStorageMode)}><option value="session">Session only (volatile)</option><option value="local">Local browser storage</option></select></div>
-            {storageMode === 'local' && <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Échec de sauvegarde : le navigateur bloque ou ne permet pas le stockage local. Vos clés ne sont pas persistées.' : storageFeedback === 'saved' ? 'Sauvegarde locale confirmée.' : 'Vérification du stockage local…'}</p>}
+            <div className="credential-mode-section">
+              <div className="storage-mode-heading"><strong>How should Keydock keep your API keys?</strong><span>Choose where credentials are kept. You can change this at any time.</span></div>
+              <div className="credential-mode-options" role="group" aria-label="Mode de conservation des identifiants">
+                <button type="button" className={`credential-mode-option ${storageMode === 'session' ? 'selected' : ''}`} aria-pressed={storageMode === 'session'} onClick={() => changeStorageMode('session')}>
+                  <span className="mode-option-title">Session only <span className="mode-recommended">Recommended</span></span>
+                  <span className="mode-option-description">Kept in memory only. Keys are cleared when you reload or close this tab. Nothing is written to browser storage.</span>
+                </button>
+                <button type="button" className={`credential-mode-option ${storageMode === 'local' ? 'selected' : ''}`} aria-pressed={storageMode === 'local'} onClick={() => changeStorageMode('local')}>
+                  <span className="mode-option-title">Local browser storage</span>
+                  <span className="mode-option-description">Keeps keys in this browser between visits. This is convenient, but localStorage is not encrypted or a secure vault.</span>
+                </button>
+              </div>
+            </div>
+            {storageMode === 'session'
+              ? <p className="storage-feedback session" role="status">Session mode active: no credentials are read from or written to persistent browser storage.</p>
+              : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Échec de sauvegarde : le navigateur bloque ou ne permet pas le stockage local. Vos clés ne sont pas persistées.' : storageFeedback === 'saved' ? 'Sauvegarde locale confirmée.' : 'Vérification du stockage local…'}</p>}
             <div className="provider-list">
               {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
