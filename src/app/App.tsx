@@ -44,8 +44,8 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 }
 
 function App() {
-  const [storageMode, setStorageMode] = useState<CredentialStorageMode>('local')
-  const [keys, setKeys] = useState<Record<ProviderId, string>>(() => loadCredentials('local'))
+  const [storageMode, setStorageMode] = useState<CredentialStorageMode>('session')
+  const [keys, setKeys] = useState<Record<ProviderId, string>>(() => loadCredentials('session'))
   const [activeProvider, setActiveProvider] = useState<ProviderId>('openrouter')
   const [openEditor, setOpenEditor] = useState<ProviderId | null>(null)
   const [draftKey, setDraftKey] = useState('')
@@ -165,7 +165,7 @@ function App() {
       <main className="workspace" id="dashboard">
         <header className="topbar">
           <div className="crumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
-          <div className="topbar-actions"><div className="sync-status"><i /> {storageMode === 'session' ? 'session only' : 'local only'} <span>·</span> synced just now</div><button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button></div>
+          <div className="topbar-actions"><div className="sync-status"><i /> {storageMode === 'session' ? 'session only · volatile' : 'local browser storage'}</div><button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button></div>
         </header>
 
         <section className="intro-row">
