@@ -288,3 +288,33 @@ h1 em { color: #8b9d39; font-style: normal; }
 @media (max-width: 620px) {
   .credential-mode-options { grid-template-columns: 1fr; }
 }
+
+
+.chat-error {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(179, 79, 60, .28);
+  border-radius: 8px;
+  background: rgba(179, 79, 60, .08);
+  color: #a34332;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.nvidia-notice {
+  margin: 0 0 10px;
+  color: #879188;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.send-button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+.app-shell[data-theme='dark'] .chat-error {
+  color: #ffb6a8;
+  background: rgba(179, 79, 60, .13);
+  border-color: rgba(255, 140, 120, .25);
+}
+.app-shell[data-theme='dark'] .nvidia-notice {
+  color: #aab7ad;
+}
