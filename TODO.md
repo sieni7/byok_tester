@@ -1,28 +1,36 @@
 # TODO — Keydock
 
 ## Keydock v0.2 — Free Models Lab
-- [x] `v0.2.0-alpha.1` : les dépendances sont verrouillées, les types communs et registres providers/modèles/policies sont en place, et l’application est découpée autour de `src/app/App.tsx` sans régression visuelle constatée.
-- [x] `v0.2.0-alpha.1.1 corrective` : l’interface est générée par le registre, les politiques sont inconnues par défaut et rattachées aux modèles, les modes session/local sont distincts, le stockage indisponible ne fait pas crasher l’application, Node est documenté, et les contrôles indépendants, le build et le Preview passent.
-- [ ] `v0.2.0-alpha.2` : proposer explicitement les modes credentials session et local.
-- [ ] `v0.2.0-alpha.3` : connecter NVIDIA NIM pour un premier appel texte réel.
-- [ ] `v0.2.0-beta.1` : remplacer les réponses de démonstration par un chat réel et normaliser les erreurs.
-- [ ] `v0.2.0-beta.2` : ajouter les autres providers et le catalogue de modèles.
-- [ ] `v0.2.0-rc.1` : livrer le comparateur multi-modèles et la validation complète.
-- [ ] `v0.2.0` : publier la version stable après validation humaine.
 
-## Dashboard responsive et architecture statique
-- [x] Le projet TypeScript React fournit un dashboard responsive à deux zones : fenêtre de chat à gauche et panneau de gestion des clés API à droite, avec adaptation mobile soignée.
-- [x] Le projet est prêt pour un dépôt GitHub public et une publication statique sur Netlify, avec configuration de build et documentation de déploiement adaptées. La configuration Netlify est livrée et le dépôt public `sieni7/byok_tester` contient la base v0.1.
+- [x] `v0.2.0-alpha.1` : socle React/TypeScript, dépendances verrouillées, types communs et registres.
+- [x] `v0.2.0-alpha.1.1 corrective` : UI pilotée par le registre, politiques d'accès au niveau modèle, séparation initiale session/local.
+- [x] `v0.2.0-alpha.1.2 corrective` : mode session par défaut sans lecture/écriture de stockage persistant ; tests comportementaux instrumentés ; scanner récursif des sources ; README et TODO alignés.
+- [ ] Validation indépendante alpha.1.2 : `npm run test:credentials`, `npm run verify:alpha1`, `npm run build`, `git diff --check`, revue du diff et du Preview.
+- [ ] `v0.2.0-alpha.2` : stabiliser l'UX credentials et les états de stockage après validation alpha.1.2.
+- [ ] `v0.2.0-alpha.3` : intégrer NVIDIA NIM pour un premier appel texte réel, uniquement après validation du socle.
+- [ ] `v0.2.0-beta.1` : remplacer les réponses simulées par un chat réel et normaliser les erreurs.
+- [ ] `v0.2.0-beta.2` : compléter les providers et le catalogue de modèles.
+- [ ] `v0.2.0-rc.1` : comparateur multi-modèles et validation complète.
+- [ ] `v0.2.0` : version stable après validation humaine.
 
-## Chat BYOK
-- [x] L’interface de chat permet la saisie des messages et conserve un historique de conversation dans la session.
-- [x] L’interface expose des commandes pour joindre des fichiers et utiliser le microphone.
-- [x] Un sélecteur permet de basculer simplement entre OpenRouter, Groq et GitHub Models configurés.
+## Dashboard et architecture
 
-## Fournisseurs et gestion des clés
-- [x] OpenRouter est mis en avant comme choix polyvalent avec endpoint compatible SDK OpenAI, sans présenter une gratuité ou un quota au niveau du fournisseur.
-- [x] Groq est présenté comme solution de secours rapide, sans présenter une gratuité ou un quota au niveau du fournisseur.
-- [x] GitHub Models est présenté comme alternative sans friction liée au compte GitHub, avec indication de limites plus restrictives.
-- [x] Chaque clé API peut être ajoutée, modifiée, révélée ou masquée, copiée et supprimée, avec libellés clairs et regroupement par famille de fournisseurs.
-- [x] Des indicateurs visuels distinguent les fournisseurs configurés, non configurés et actuellement actifs.
-- [x] Les clés sont conservées exclusivement localement dans le navigateur, sans clé codée en dur, sans envoi vers un service de stockage tiers et sans exposition involontaire dans l’interface.
+- [x] Dashboard responsive à deux zones : playground et gestionnaire de clés.
+- [x] Registre des providers séparé des modèles et des politiques d'accès.
+- [x] Politique `unknown-unverified` explicite en l'absence de vérification datée.
+- [ ] Ajouter des tests UI ciblés sans élargir prématurément l'architecture.
+
+## Playground
+
+- [x] Saisie des messages et historique conservé en mémoire de session.
+- [x] Sélecteur de provider actif.
+- [ ] Remplacer les réponses de démonstration par des appels réels après mise en place d'une architecture de credentials adaptée.
+- [ ] Implémenter réellement la lecture des fichiers et la capture microphone, ou conserver des libellés explicitement démonstratifs.
+
+## Credentials
+
+- [x] Ajout, modification, suppression, copie et masquage/révélation des clés.
+- [x] Mode session volatil par défaut : aucun accès à localStorage au démarrage.
+- [x] Mode local facultatif avec avertissement explicite sur l'absence de chiffrement.
+- [x] Tests runtime vérifiant l'absence d'accès au stockage en mode session, le chargement/sauvegarde locale et le fallback sur stockage indisponible.
+- [ ] Étudier un proxy/vault serveur avant toute exposition publique des appels fournisseurs.
