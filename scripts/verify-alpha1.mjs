@@ -12,6 +12,7 @@ const requiredFiles = [
   'src/core/access-policy.ts',
   'src/services/credential-service.ts',
   'src/services/nvidia-chat-service.ts',
+  'netlify/functions/nvidia-proxy.js',
   'src/core/nvidia-models.ts',
   'scripts/test-credentials.mjs',
   '.nvmrc',
@@ -46,6 +47,7 @@ const models = read('src/core/model-registry.ts')
 const policies = read('src/core/access-policy.ts')
 const credentials = read('src/services/credential-service.ts')
 const nvidiaService = read('src/services/nvidia-chat-service.ts')
+const nvidiaProxy = read('netlify/functions/nvidia-proxy.js')
 const nvidiaModels = read('src/core/nvidia-models.ts')
 assert.ok(app.includes('providers.map('), 'Provider UI must be generated from the registry')
 assert.ok(app.includes("useState<ProviderId>('nvidia')"), 'NVIDIA NIM must be the default active provider in alpha.3')
@@ -62,11 +64,16 @@ assert.ok(!/metric:|metricLabel:|accessPolicyId:/.test(providers), 'Provider reg
 assert.ok(policies.includes('unknown-unverified'), 'Unknown access policy must be explicit')
 assert.ok(!/pricing: 'free'/.test(policies), 'Unverified provider-level free claims must be absent')
 assert.ok(models.includes('accessPolicyId'), 'Model registry must own access policy references')
-assert.ok(nvidiaModels.includes('meta/llama-3.1-8b-instruct'), 'NVIDIA NIM model identifier must be registered')
+assert.ok(nvidiaModels.includes('openai/gpt-oss-20b'), 'NVIDIA NIM model identifier must be registered')
 assert.ok(nvidiaModels.includes('unknown-unverified'), 'NVIDIA model access policy must remain unverified')
-assert.ok(nvidiaService.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'NVIDIA NIM endpoint must be explicit')
-assert.ok(nvidiaService.includes('Authorization:'), 'NVIDIA requests must use bearer authentication')
-assert.ok(!nvidiaService.includes('console.log'), 'NVIDIA service must not log request credentials')
+assert.ok(nvidiaService.includes('status === 410'), 'Retired NVIDIA models must have an actionable error')
+assert.ok(nvidiaService.includes("'/.netlify/functions/nvidia-proxy'"), 'Browser requests must use the same-origin Netlify proxy')
+assert.ok(nvidiaService.includes('JSON.stringify({ apiKey, model, prompt })'), 'The proxy request must carry the key, model and prompt in its JSON body')
+assert.ok(!nvidiaService.includes('Authorization:'), 'The browser must not send the NVIDIA bearer header directly')
+assert.ok(nvidiaProxy.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'The fixed NVIDIA upstream endpoint must be explicit in the proxy')
+assert.ok(nvidiaProxy.includes('Authorization:'), 'The proxy must authenticate upstream with bearer authentication')
+assert.ok(nvidiaProxy.includes('openai/gpt-oss-20b'), 'The proxy must enforce the registered NVIDIA model allowlist')
+assert.ok(!nvidiaService.includes('console.log') && !nvidiaProxy.includes('console.log'), 'NVIDIA service and proxy must not log request credentials')
 assert.ok(app.includes("useState<CredentialStorageMode>('session')"), 'Session must be the default credential mode')
 assert.ok(app.includes("loadCredentials('session')"), 'Startup must not load persistent credentials')
 assert.ok(app.includes('credential-mode-options'), 'Credential modes must be presented as explicit options')
