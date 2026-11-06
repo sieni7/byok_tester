@@ -1,18 +1,35 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import test from 'node:test'
-import { createRequire } from 'node:module'
 
-const require = createRequire(import.meta.url)
-const ts = require('typescript')
+const tempDir = mkdtempSync(join(tmpdir(), 'keydock-credential-tests-'))
+writeFileSync(join(tempDir, 'package.json'), JSON.stringify({ type: 'module' }))
 
+// Use the TypeScript CLI instead of compiler runtime APIs, which differ across TS releases.
+execFileSync(process.execPath, [
+  'node_modules/typescript/bin/tsc',
+  'src/services/credential-service.ts',
+  '--target', 'ES2022',
+  '--module', 'ESNext',
+  '--moduleResolution', 'Bundler',
+  '--rootDir', 'src/services',
+  '--outDir', tempDir,
+  '--skipLibCheck',
+  '--types', 'node',
+], { stdio: 'inherit' })
+
+const compiledUrl = pathToFileURL(join(tempDir, 'credential-service.js')).href
+const { loadCredentials, saveCredentials, emptyCredentials, CREDENTIAL_STORAGE_KEY } = await import(compiledUrl)
 const source = readFileSync('src/services/credential-service.ts', 'utf8')
-const compiled = ts.transpileModule(source, {
-  // Numeric compiler option values keep this harness compatible with TS releases that omit runtime enums.
-  compilerOptions: { module: 99, target: 9 },
-}).outputText
-const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`
-const { loadCredentials, saveCredentials, emptyCredentials, CREDENTIAL_STORAGE_KEY } = await import(moduleUrl)
+assert.match(source, /mode === 'session'/, 'credential service must explicitly handle session mode')
+
+test.after(() => {
+  rmSync(tempDir, { recursive: true, force: true })
+})
 
 function instrumentedStorage(initial = '{}', shouldThrow = false) {
   const calls = []
