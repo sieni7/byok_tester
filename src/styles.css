@@ -146,7 +146,10 @@ h1 em { color: #8b9d39; font-style: normal; }
 .summary-main span { font-size: 9px; color: #899187; }
 .summary-badge { display: flex; align-items: center; gap: 5px; color: #75802f; font: 9px 'DM Mono', monospace; text-transform: uppercase; }
 .summary-badge span { width: 5px; height: 5px; background: #b3c650; border-radius: 50%; }
-.provider-list { display: grid; gap: 12px; }
+.storage-mode-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: -5px 0 14px; color: #7d887e; font: 9px 'DM Mono', monospace; }
+.storage-mode-row select { padding: 6px 8px; border: 1px solid rgba(22,33,28,.12); border-radius: 6px; background: #fbfbf6; color: var(--ink); font: inherit; }
+.provider-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.provider-list > .provider-card:first-child { grid-column: 1 / -1; }
 .provider-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
 .provider-card { position: relative; min-width: 0; padding: 17px; border: 1px solid rgba(22,33,28,.1); border-radius: 12px; background: rgba(246,246,239,.7); transition: .2s ease; }
 .provider-card:hover { background: #f8f8f2; border-color: rgba(22,33,28,.18); }
@@ -234,6 +237,8 @@ h1 em { color: #8b9d39; font-style: normal; }
   .chat-card-head { gap: 10px; }
   .small-control { font-size: 0; padding: 8px; }
   .small-control svg { display: none; }
+  .provider-list { grid-template-columns: 1fr; }
+  .provider-list > .provider-card:first-child { grid-column: auto; }
   .provider-pair { grid-template-columns: 1fr; }
   .provider-card, .provider-card.featured { padding: 16px; }
   .provider-metrics { gap: 26px; }

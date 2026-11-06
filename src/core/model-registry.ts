@@ -1,9 +1,6 @@
 import type { ModelDefinition } from '../types'
 
-/**
- * Alpha.1 intentionally starts with metadata only. Adapters will consume this
- * registry in later deliveries without changing the playground contract.
- */
+/** Alpha.1.1 keeps the catalog empty until model access is independently verified. Each future model owns an accessPolicyId. */
 export const models: ModelDefinition[] = []
 
 export function modelsForProvider(providerId: ModelDefinition['providerId']) {

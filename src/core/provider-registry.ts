@@ -1,5 +1,6 @@
 import type { Provider } from '../types'
 
+/** Provider metadata only. Pricing and quota live on model access policies. */
 export const providers: Provider[] = [
   {
     id: 'openrouter',
@@ -7,12 +8,9 @@ export const providers: Provider[] = [
     shortName: 'OR',
     family: 'Routeur multi-modèles',
     description: 'Un point d’entrée OpenAI-compatible pour tester une grande variété de modèles.',
-    metric: '20 / min',
-    metricLabel: 'limite indicative',
     endpoint: 'openrouter.ai/api/v1',
     accent: 'lime',
     badge: 'Recommandé',
-    accessPolicyId: 'openrouter-free-models',
   },
   {
     id: 'groq',
@@ -20,12 +18,9 @@ export const providers: Provider[] = [
     shortName: 'G',
     family: 'Inference ultra-rapide',
     description: 'La roue de secours quand la vélocité et le volume passent en premier.',
-    metric: '1 000 / jour',
-    metricLabel: 'limite indicative',
     endpoint: 'api.groq.com/openai/v1',
     accent: 'orange',
     badge: 'Rapide',
-    accessPolicyId: 'groq-free-tier',
   },
   {
     id: 'github',
@@ -33,12 +28,9 @@ export const providers: Provider[] = [
     shortName: 'GH',
     family: 'Écosystème GitHub',
     description: 'L’option sans friction pour démarrer avec votre compte GitHub existant.',
-    metric: '15 / min',
-    metricLabel: 'selon le modèle',
     endpoint: 'models.inference.ai.azure.com',
     accent: 'blue',
     badge: 'Sans friction',
-    accessPolicyId: 'github-models-variable',
   },
 ]
 

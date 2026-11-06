@@ -8,12 +8,9 @@ export type Provider = {
   shortName: string
   family: string
   description: string
-  metric: string
-  metricLabel: string
   endpoint: string
   accent: string
   badge: string
-  accessPolicyId: string
 }
 
 export type ModelCapability = 'text' | 'vision' | 'tools' | 'structured-output'
@@ -32,7 +29,8 @@ export type AccessPolicy = {
   label: string
   quotaLabel: string
   sourceUrl?: string
-  lastVerifiedAt: string
+  scope?: string
+  lastVerifiedAt?: string
 }
 
 export type ChatMessage = {

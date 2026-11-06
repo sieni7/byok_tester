@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { providers } from '../core/provider-registry'
 import { loadCredentials, saveCredentials } from '../services/credential-service'
+import type { CredentialStorageMode } from '../services/credential-service'
 import type { ChatMessage, Provider, ProviderId } from '../types'
 
 const initialMessages: ChatMessage[] = [
@@ -43,7 +44,8 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 }
 
 function App() {
-  const [keys, setKeys] = useState<Record<ProviderId, string>>(loadCredentials)
+  const [storageMode, setStorageMode] = useState<CredentialStorageMode>('local')
+  const [keys, setKeys] = useState<Record<ProviderId, string>>(() => loadCredentials('local'))
   const [activeProvider, setActiveProvider] = useState<ProviderId>('openrouter')
   const [openEditor, setOpenEditor] = useState<ProviderId | null>(null)
   const [draftKey, setDraftKey] = useState('')
@@ -56,10 +58,16 @@ function App() {
   const configuredCount = useMemo(() => providers.filter((provider) => Boolean(keys[provider.id])).length, [keys])
 
   useEffect(() => {
-    saveCredentials(keys)
-  }, [keys])
+    saveCredentials(keys, storageMode)
+  }, [keys, storageMode])
 
-  const configuredProvider = providers.find((provider) => provider.id === activeProvider)
+  const fallbackProvider = providers.slice(0, 1)[0]!
+  const configuredProvider = providers.find((provider) => provider.id === activeProvider) ?? fallbackProvider
+  const beginAdd = () => beginEdit(providers.find((provider) => !keys[provider.id])?.id ?? fallbackProvider.id)
+  const changeStorageMode = (mode: CredentialStorageMode) => {
+    setStorageMode(mode)
+    setKeys(loadCredentials(mode))
+  }
 
   const beginEdit = (provider: ProviderId) => {
     setOpenEditor(provider)
@@ -75,7 +83,7 @@ function App() {
 
   const deleteKey = (provider: ProviderId) => {
     setKeys((current) => ({ ...current, [provider]: '' }))
-    if (activeProvider === provider) setActiveProvider('openrouter')
+    if (activeProvider === provider) setActiveProvider(fallbackProvider.id)
   }
 
   const toggleReveal = (provider: ProviderId) => {
@@ -108,7 +116,7 @@ function App() {
     setDraftMessage('')
     setAttachedFile(null)
     window.setTimeout(() => {
-      const provider = providers.find((item) => item.id === activeProvider)
+      const provider = providers.find((item) => item.id === activeProvider) ?? fallbackProvider
       const response = keys[activeProvider]
         ? `Prompt préparé pour ${provider?.name}. Le branchement réseau reste volontairement désactivé dans ce prototype local.`
         : `Votre message est prêt. Ajoutez une clé ${provider?.name} à droite pour activer ce fournisseur.`
@@ -157,7 +165,7 @@ function App() {
       <main className="workspace" id="dashboard">
         <header className="topbar">
           <div className="crumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
-          <div className="topbar-actions"><div className="sync-status"><i /> local only <span>·</span> synced just now</div><button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button></div>
+          <div className="topbar-actions"><div className="sync-status"><i /> {storageMode === 'session' ? 'session only' : 'local only'} <span>·</span> synced just now</div><button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button></div>
         </header>
 
         <section className="intro-row">
@@ -167,7 +175,7 @@ function App() {
             <p className="intro-copy">Un espace calme pour brancher, tester et gérer vos fournisseurs IA — sans éparpiller vos secrets.</p>
           </div>
           <div className="intro-stats">
-            <div className="stat-block"><strong>{configuredCount}<small>/ 3</small></strong><span>providers ready</span></div>
+            <div className="stat-block"><strong>{configuredCount}<small>/ {providers.length}</small></strong><span>providers ready</span></div>
             <div className="stat-divider" />
             <div className="stat-block"><strong>100<span>%</span></strong><span>local storage</span></div>
           </div>
@@ -210,16 +218,13 @@ function App() {
           </section>
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
-            <div className="keys-head"><div><div className="section-kicker">YOUR PROVIDERS</div><h2 id="keys-title">API key manager</h2></div><button className="add-key-button" type="button" onClick={() => beginEdit('openrouter')}><Icon name="plus" size={16} /> Add key</button></div>
-            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>Stored only in this browser</span></div></div><div className="summary-badge"><span /> local storage only*</div></div>
+            <div className="keys-head"><div><div className="section-kicker">YOUR PROVIDERS</div><h2 id="keys-title">API key manager</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
+            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
+            <div className="storage-mode-row"><span>Credential mode</span><select aria-label="Choisir le mode de stockage" value={storageMode} onChange={(event) => changeStorageMode(event.target.value as CredentialStorageMode)}><option value="session">Session only (volatile)</option><option value="local">Local browser storage</option></select></div>
             <div className="provider-list">
-              <ProviderCard provider={providers[0]} value={keys.openrouter} isActive={activeProvider === 'openrouter'} isOpen={openEditor === 'openrouter'} draftKey={draftKey} revealed={revealed.has('openrouter')} copied={copied === 'openrouter'} onActivate={() => setActiveProvider('openrouter')} onEdit={() => beginEdit('openrouter')} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal('openrouter')} onCopy={() => copyKey('openrouter')} onDelete={() => deleteKey('openrouter')} />
-              <div className="provider-pair">
-                <ProviderCard provider={providers[1]} value={keys.groq} isActive={activeProvider === 'groq'} isOpen={openEditor === 'groq'} draftKey={draftKey} revealed={revealed.has('groq')} copied={copied === 'groq'} onActivate={() => setActiveProvider('groq')} onEdit={() => beginEdit('groq')} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal('groq')} onCopy={() => copyKey('groq')} onDelete={() => deleteKey('groq')} />
-                <ProviderCard provider={providers[2]} value={keys.github} isActive={activeProvider === 'github'} isOpen={openEditor === 'github'} draftKey={draftKey} revealed={revealed.has('github')} copied={copied === 'github'} onActivate={() => setActiveProvider('github')} onEdit={() => beginEdit('github')} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal('github')} onCopy={() => copyKey('github')} onDelete={() => deleteKey('github')} />
-              </div>
+              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
-            <p className="security-caption">* Prototype local : le navigateur n’est pas un coffre chiffré. Connectez un vault sécurisé avant la production.</p>
+            <p className="security-caption">* Local browser storage is not a secure vault. Session mode is volatile and writes nothing to localStorage.</p>
           </section>
         </div>
       </main>
@@ -252,7 +257,7 @@ function ProviderCard({ provider, value, isActive, isOpen, draftKey, revealed, c
     <article className={`provider-card ${provider.id === 'openrouter' ? 'featured' : ''} ${isActive ? 'active' : ''}`}>
       <div className="provider-topline"><div className={`provider-logo ${provider.accent}`}>{provider.shortName}</div><div className="provider-title"><div><h3>{provider.name}</h3>{provider.id === 'openrouter' && <span className="recommendation">{provider.badge}</span>}</div><span>{provider.family}</span></div><button className={`active-toggle ${isActive ? 'selected' : ''}`} type="button" onClick={onActivate} aria-label={`Définir ${provider.name} comme fournisseur actif`}><span />{isActive ? 'Active' : 'Set active'}</button></div>
       <p className="provider-description">{provider.description}</p>
-      <div className="provider-metrics"><div><strong>{provider.metric}</strong><span>{provider.metricLabel}</span></div><div><strong className="endpoint-text">{provider.endpoint}</strong><span>OpenAI-compatible endpoint</span></div></div>
+      <div className="provider-metrics"><div><strong>Model-level</strong><span>access policy</span></div><div><strong className="endpoint-text">{provider.endpoint}</strong><span>OpenAI-compatible endpoint</span></div></div>
       <div className={`key-row ${hasKey ? 'connected' : ''}`}>
         <div className="key-status"><span className="key-status-dot" /><div><span className="key-label">{hasKey ? 'API key' : 'API key'}</span><strong>{masked}</strong></div></div>
         <div className="key-actions">
@@ -262,7 +267,7 @@ function ProviderCard({ provider, value, isActive, isOpen, draftKey, revealed, c
         </div>
       </div>
       {copied && <div className="copied-toast">Copied to clipboard</div>}
-      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Paste your {provider.name} key</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus value={draftKey} onChange={(event) => onDraft(event.target.value)} placeholder="sk-..." /><button type="button" onClick={onSave}>Save</button></div><div className="editor-actions"><span>Stored locally on this device</span><button type="button" onClick={onCancel}>Cancel</button></div></div>}
+      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Paste your {provider.name} key</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus value={draftKey} onChange={(event) => onDraft(event.target.value)} placeholder="sk-..." /><button type="button" onClick={onSave}>Save</button></div><div className="editor-actions"><span>Stored in current credential mode</span><button type="button" onClick={onCancel}>Cancel</button></div></div>}
     </article>
   )
 }
