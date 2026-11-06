@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import * as ts from 'typescript'
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
+const ts = require('typescript')
 
 const source = readFileSync('src/services/credential-service.ts', 'utf8')
 const compiled = ts.transpileModule(source, {
