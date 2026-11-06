@@ -17,7 +17,7 @@ const initialMessages: ChatMessage[] = [
   {
     id: 2,
     role: 'assistant',
-    text: 'Votre prompt est envoyé directement à NVIDIA NIM ; cette alpha prend en charge une requête texte ponctuelle.',
+    text: 'Votre prompt passe par le proxy Netlify de Keydock avant d’être transmis à NVIDIA NIM ; cette alpha prend en charge une requête texte ponctuelle.',
     meta: 'NVIDIA NIM · requête directe à la demande',
   },
 ]
@@ -284,7 +284,7 @@ function App() {
               ))}
             </div>
             {sendError && <div className="chat-error" role="alert">{sendError}</div>}{sendFeedback && <div className="chat-success" role="status">{sendFeedback}</div>}{isSending && <div className="chat-loading" role="status">NVIDIA NIM traite votre demande…</div>}
-            {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion réelle NVIDIA NIM · votre prompt et votre clé sont transmis directement à NVIDIA. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
+            {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion NVIDIA NIM via le proxy Netlify de Keydock · votre clé est transmise temporairement au proxy, sans stockage ni journalisation applicative. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
             <form className="composer" onSubmit={handleSend}>
               <textarea value={draftMessage} onChange={(event) => { setDraftMessage(event.target.value); setSendError(null); setSendFeedback(null) }} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Prompt à envoyer à NVIDIA NIM" aria-invalid={Boolean(sendError)} aria-describedby="prompt-help" disabled={isSending} onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); if (!isSending && draftMessage.trim()) event.currentTarget.form?.requestSubmit() } }} />
               <div className="composer-actions">
