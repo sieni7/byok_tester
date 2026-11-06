@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { providers } from '../core/provider-registry'
 import { loadCredentials, saveCredentials } from '../services/credential-service'
@@ -65,6 +65,8 @@ function App() {
   const [isListening, setIsListening] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [sendFeedback, setSendFeedback] = useState<string | null>(null)
+  const sendingLock = useRef(false)
   const configuredCount = useMemo(() => Number(Boolean(keys.nvidia)), [keys.nvidia])
 
   useEffect(() => {
@@ -157,49 +159,59 @@ function App() {
 
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
-    if (isSending) return
+    if (sendingLock.current || isSending) return
+
+    const text = draftMessage.trim()
+    if (!text) {
+      setSendError('Saisissez un prompt avant de lancer le test.')
+      setSendFeedback(null)
+      return
+    }
     if (activeProvider !== 'nvidia') {
       setSendError('Ce fournisseur n’est pas encore disponible. Seul NVIDIA NIM peut être testé actuellement.')
+      setSendFeedback(null)
       return
     }
-    const text = draftMessage.trim()
-    if (!text && !attachedFile) return
-    if (activeProvider === 'nvidia' && !keys.nvidia) {
+    if (!keys.nvidia) {
       setSendError('Ajoutez une clé NVIDIA NIM dans le gestionnaire de clés avant l’envoi.')
+      setSendFeedback(null)
       return
     }
-    if (activeProvider === 'nvidia' && attachedFile) {
+    if (attachedFile) {
       setSendError('Les pièces jointes ne sont pas prises en charge par cette première intégration NVIDIA. Retirez le fichier pour continuer.')
+      setSendFeedback(null)
       return
     }
 
-    const submittedText = text || `Fichier joint : ${attachedFile}`
+    sendingLock.current = true
+    setIsSending(true)
     setSendError(null)
-    setMessages((current) => [...current, { id: Date.now(), role: 'user', text: submittedText }])
-    setDraftMessage('')
-    setAttachedFile(null)
+    setSendFeedback(null)
 
-    if (activeProvider === 'nvidia') {
-      setIsSending(true)
-      try {
-        const model = nvidiaModels[0]!
-        const response = await sendNvidiaChatCompletion({
-          apiKey: keys.nvidia,
-          prompt: text,
-          model: model.id,
-        })
-        setMessages((current) => [...current, {
-          id: Date.now() + 1,
+    try {
+      const model = nvidiaModels[0]!
+      const response = await sendNvidiaChatCompletion({
+        apiKey: keys.nvidia,
+        prompt: text,
+        model: model.id,
+      })
+      const requestId = Date.now()
+      setMessages((current) => [
+        ...current,
+        { id: requestId, role: 'user', text },
+        {
+          id: requestId + 1,
           role: 'assistant',
           text: response,
-          meta: `NVIDIA NIM · ${model.label}`,
-        }])
-      } catch (error) {
-        setSendError(error instanceof Error ? error.message : 'Une erreur inattendue est survenue pendant l’appel NVIDIA.')
-      } finally {
-        setIsSending(false)
-      }
-      return
+          meta: 'NVIDIA NIM · ' + model.label,
+        },
+      ])
+      setSendFeedback('Réponse reçue de NVIDIA NIM. Votre prompt est conservé : vous pouvez le modifier ou le renvoyer.')
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : 'Une erreur inattendue est survenue pendant l’appel NVIDIA.')
+    } finally {
+      sendingLock.current = false
+      setIsSending(false)
     }
   }
 
@@ -284,18 +296,18 @@ function App() {
                 </div>
               ))}
             </div>
-            {sendError && <div className="chat-error" role="alert">{sendError}</div>}
+            {sendError && <div className="chat-error" role="alert">{sendError}</div>}{sendFeedback && <div className="chat-success" role="status">{sendFeedback}</div>}{isSending && <div className="chat-loading" role="status">NVIDIA NIM traite votre demande…</div>}
             {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion réelle NVIDIA NIM · votre prompt et votre clé sont transmis directement à NVIDIA. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
             <form className="composer" onSubmit={handleSend}>
               {attachedFile && <div className="attachment-chip"><Icon name="paperclip" size={14} /> {attachedFile}<button type="button" onClick={() => setAttachedFile(null)} aria-label="Retirer la pièce jointe">×</button></div>}
-              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Votre message" disabled={isSending} />
+              <textarea value={draftMessage} onChange={(event) => { setDraftMessage(event.target.value); setSendError(null); setSendFeedback(null) }} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Votre message" aria-invalid={Boolean(sendError)} disabled={isSending} />
               <div className="composer-actions">
                 <div className="composer-tools">
                   <label className="tool-button" aria-label="Joindre un fichier"><Icon name="paperclip" size={17} /><input type="file" onChange={handleFile} /></label>
                   <button className={`tool-button ${isListening ? 'listening' : ''}`} type="button" aria-label="Activer le microphone" onClick={() => setIsListening((value) => !value)}><Icon name="mic" size={17} /></button>
                   <span className="tool-hint">{isListening ? 'Listening...' : '⌘ + Enter to run'}</span>
                 </div>
-                <button className="send-button" type="submit" aria-label="Envoyer" disabled={isSending}>{isSending ? '…' : <Icon name="arrow" size={18} />}</button>
+                <button className="send-button" type="submit" aria-label="Envoyer" disabled={isSending || !draftMessage.trim()}>{isSending ? 'Envoi…' : <Icon name="arrow" size={18} />}</button>
               </div>
             </form>
             <div className="chat-footnote"><Icon name="shield" size={13} /> Messages are not stored outside this session</div>

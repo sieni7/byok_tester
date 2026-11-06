@@ -334,3 +334,8 @@ h1 em { color: #8b9d39; font-style: normal; }
   line-height: 1.45;
 }
 .app-shell[data-theme='dark'] .key-editor-error { color: #ffb6a8; }
+
+.chat-success, .chat-loading { margin: 10px 22px 0; padding: 10px 12px; border-radius: 9px; font-size: 12px; line-height: 1.5; }
+.chat-success { color: #286b4e; background: rgba(71, 150, 108, .10); border: 1px solid rgba(71, 150, 108, .24); }
+.chat-loading { color: var(--muted, #6d786f); background: rgba(120, 130, 120, .08); }
+.app-shell[data-theme='dark'] .chat-success { color: #a7e2c0; background: rgba(71, 150, 108, .15); }
