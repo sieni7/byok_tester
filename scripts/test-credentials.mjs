@@ -19,6 +19,7 @@ execFileSync(process.execPath, [
   '--rootDir', 'src/services',
   '--outDir', tempDir,
   '--skipLibCheck',
+  '--ignoreConfig',
   '--types', 'node',
 ], { stdio: 'inherit' })
 
