@@ -17,7 +17,7 @@ const initialMessages: ChatMessage[] = [
   {
     id: 2,
     role: 'assistant',
-    text: 'Vos identifiants restent dans ce navigateur. Rien n’est envoyé tant que vous n’avez pas branché votre intégration.',
+    text: 'Le playground NVIDIA envoie le prompt courant à NVIDIA NIM lorsque ce fournisseur est sélectionné.',
     meta: 'Sécurité locale activée',
   },
 ]
