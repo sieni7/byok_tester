@@ -18,7 +18,7 @@ const initialMessages: ChatMessage[] = [
     id: 2,
     role: 'assistant',
     text: 'Le playground NVIDIA envoie le prompt courant à NVIDIA NIM lorsque ce fournisseur est sélectionné.',
-    meta: 'Sécurité locale activée',
+    meta: 'NVIDIA NIM · requête directe à la demande',
   },
 ]
 
