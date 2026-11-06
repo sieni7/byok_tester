@@ -5,6 +5,32 @@ const MAX_API_KEY_LENGTH = 4096
 const MAX_PROMPT_BYTES = 24 * 1024
 const UPSTREAM_TIMEOUT_MS = 40_000
 
+async function readLimitedBody(request) {
+  if (!request.body) return { tooLarge: false, body: '' }
+  const reader = request.body.getReader()
+  const chunks = []
+  let totalBytes = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    totalBytes += value.byteLength
+    if (totalBytes > MAX_BODY_BYTES) {
+      await reader.cancel()
+      return { tooLarge: true, body: '' }
+    }
+    chunks.push(value)
+  }
+
+  const body = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    body.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return { tooLarge: false, body: new TextDecoder().decode(body) }
+}
+
 function jsonResponse(statusCode, payload) {
   return new Response(JSON.stringify(payload), {
     status: statusCode,
@@ -32,13 +58,11 @@ export default async function nvidiaProxy(request) {
 
   let rawBody
   try {
-    rawBody = await request.text()
+    const result = await readLimitedBody(request)
+    if (result.tooLarge) return jsonResponse(413, { error: 'La requête est trop volumineuse.' })
+    rawBody = result.body
   } catch {
     return jsonResponse(400, { error: 'Impossible de lire la requête.' })
-  }
-
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
-    return jsonResponse(413, { error: 'La requête est trop volumineuse.' })
   }
 
   let input
