@@ -95,7 +95,7 @@ test('aborts a request when the timeout is reached', async () => {
         init.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
       }),
     }),
-    (error) => error instanceof NvidiaChatError && error.code === 'timeout' && error.message.includes('0 secondes'),
+    (error) => error instanceof NvidiaChatError && error.code === 'timeout' && error.message.includes('1 secondes'),
   )
 })
 
