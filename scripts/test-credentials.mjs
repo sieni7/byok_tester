@@ -8,7 +8,8 @@ const ts = require('typescript')
 
 const source = readFileSync('src/services/credential-service.ts', 'utf8')
 const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  // Numeric compiler option values keep this harness compatible with TS releases that omit runtime enums.
+  compilerOptions: { module: 99, target: 9 },
 }).outputText
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`
 const { loadCredentials, saveCredentials, emptyCredentials, CREDENTIAL_STORAGE_KEY } = await import(moduleUrl)
