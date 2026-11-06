@@ -12,7 +12,8 @@
     "verify:alpha1": "node scripts/verify-alpha1.mjs",
     "test:credentials": "node scripts/test-credentials.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test:nvidia": "node scripts/test-nvidia.mjs"
+    "test:nvidia": "node scripts/test-nvidia.mjs",
+    "test:nvidia-proxy": "node --test scripts/test-nvidia-proxy.mjs"
   },
   "dependencies": {
     "react": "19.3.1",
