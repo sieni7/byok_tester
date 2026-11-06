@@ -7,7 +7,8 @@
 - [x] `v0.2.0-alpha.1.2 corrective` : mode session par défaut sans accès au stockage persistant ; tests comportementaux ; scanner récursif des sources ; garde-fous de changement de mode ; retours de stockage et presse-papiers ; thème clair/sombre ; CI verte avant fusion.
 - [x] Validation CI alpha.1.2 : `npm ci`, `npm run test:credentials`, `npm run verify:alpha1`, `npm run build`, `git diff --check`.
 - [x] `v0.2.0-alpha.2` : choix session/local présenté comme deux options lisibles ; conséquences de chaque mode expliquées ; mode actif accessible (`aria-pressed`) ; retour d'état session/local ; confirmation de bascule préservée ; tests structurels et build.
-- [x] `v0.2.0-alpha.3` — hiérarchie produit : NVIDIA NIM au premier plan et sélectionné par défaut ; les autres fournisseurs sont explicitement marqués « À venir » et ne peuvent pas être activés.\n- [ ] `v0.2.0-alpha.3` — validation finale : appel réel avec une clé de test dédiée et vérification CORS dans le navigateur ; les tests CI restent simulés.
+- [x] `v0.2.0-alpha.3` — hiérarchie produit : NVIDIA NIM au premier plan et sélectionné par défaut ; les autres fournisseurs sont explicitement marqués « À venir » et ne peuvent pas être activés.
+- [ ] `v0.2.0-alpha.3` — validation finale : appel réel avec une clé de test dédiée et vérification CORS dans le navigateur ; les tests CI restent simulés.
 - [ ] `v0.2.0-beta.1` : remplacer les réponses simulées par un chat réel et normaliser les erreurs.
 - [ ] `v0.2.0-beta.2` : compléter les providers et le catalogue de modèles.
 - [ ] `v0.2.0-rc.1` : comparateur multi-modèles et validation complète.
