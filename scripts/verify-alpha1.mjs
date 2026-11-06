@@ -43,8 +43,8 @@ const models = read('src/core/model-registry.ts')
 const policies = read('src/core/access-policy.ts')
 const credentials = read('src/services/credential-service.ts')
 assert.ok(app.includes('providers.map('), 'Provider UI must be generated from the registry')
-assert.ok(!/providers\\[(?:0|1|2)\\]/.test(app), 'Provider UI must not rely on positional registry entries')
-assert.ok(!/provider\\.metric|provider\\.metricLabel/.test(app), 'Provider UI must not read provider-level quotas')
+assert.ok(!/providers\[(?:0|1|2)\]/.test(app), 'Provider UI must not rely on positional registry entries')
+assert.ok(!/provider\.metric|provider\.metricLabel/.test(app), 'Provider UI must not read provider-level quotas')
 assert.ok(providers.includes('Provider metadata only'), 'Provider registry must document its scope')
 assert.ok(!/metric:|metricLabel:|accessPolicyId:/.test(providers), 'Provider registry still contains policy data')
 assert.ok(policies.includes('unknown-unverified'), 'Unknown access policy must be explicit')
@@ -75,9 +75,11 @@ for (const directory of ['src', 'scripts']) if (existsSync(directory)) walk(dire
 
 // Build patterns from fragments so this verifier does not match its own detection signatures.
 const secretPatterns = [
-  new RegExp('sk-' + '[A-Za-z0-9]{20,}'),
+  new RegExp('sk-' + '[A-Za-z0-9-]{20,}'),
+  new RegExp('sk-or-v1-' + '[A-Za-z0-9]{20,}'),
   new RegExp('gsk' + '_' + '[A-Za-z0-9]{20,}'),
   new RegExp('github' + '_pat_' + '[A-Za-z0-9_]{20,}'),
+  new RegExp('gh' + '(?:p|o|u|s|r)_' + '[A-Za-z0-9]{20,}'),
   new RegExp('Bearer' + String.fromCharCode(92) + 's+' + '[A-Za-z0-9._-]{20,}', 'i'),
 ]
 for (const file of scannedFiles) {
