@@ -70,11 +70,13 @@ src/
 │   ├── model-registry.ts
 │   └── access-policy.ts
 ├── services/
-│   └── credential-service.ts
+│   ├── credential-service.ts
+│   └── nvidia-chat-service.ts
 ├── types/
 │   └── index.ts
 └── main.tsx
 scripts/
+├── test-credentials.mjs
 ├── test-credentials.mjs
 ├── test-nvidia.mjs
 └── verify-alpha1.mjs
