@@ -77,7 +77,8 @@ export async function sendNvidiaChatCompletion({
       })
     } catch {
       if (controller.signal.aborted) {
-        throw new NvidiaChatError(`La requête NVIDIA a dépassé ${Math.max(1, Math.round(timeoutMs / 1000))} secondes. Réessayez.`, 'timeout')
+        const seconds = Math.max(1, Math.round(timeoutMs / 1000))
+        throw new NvidiaChatError(`La requête NVIDIA a dépassé ${seconds} seconde${seconds > 1 ? 's' : ''}. Réessayez.`, 'timeout')
       }
       throw new NvidiaChatError('Connexion à NVIDIA impossible. Vérifiez votre réseau et réessayez.', 'network')
     }
