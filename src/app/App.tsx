@@ -177,7 +177,7 @@ function App() {
           <div className="intro-stats">
             <div className="stat-block"><strong>{configuredCount}<small>/ {providers.length}</small></strong><span>providers ready</span></div>
             <div className="stat-divider" />
-            <div className="stat-block"><strong>100<span>%</span></strong><span>local storage</span></div>
+            <div className="stat-block"><strong>{storageMode === 'session' ? 'RAM' : '100%'}</strong><span>{storageMode === 'session' ? 'volatile session' : 'local storage'}</span></div>
           </div>
         </section>
 
