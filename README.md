@@ -6,7 +6,7 @@
 
 Keydock est une interface React + TypeScript pour prototypes et expérimentations multi-provider. Le dashboard réunit un playground de démonstration et un gestionnaire de credentials.
 
-> **Statut : v0.2.0-alpha.1.2 corrective — implémentation en cours de validation.** Le mode session est le comportement par défaut. Le mode local est disponible sur activation explicite. Aucun appel réel à un fournisseur IA n'est encore effectué ; NVIDIA NIM n'est pas intégré.
+> **Statut : v0.2.0-alpha.2 — UX des modes credentials en cours de validation.** Le mode session est le choix recommandé et le comportement par défaut. Deux choix explicites sont présentés : session volatile ou stockage local du navigateur, avec leurs conséquences expliquées avant utilisation. Aucun appel réel à un fournisseur IA n'est encore effectué ; NVIDIA NIM n'est pas intégré.
 
 ## Périmètre actuel
 
@@ -100,7 +100,7 @@ Le build Vite est généré dans `dist/`.
 ## Roadmap
 
 1. **alpha.1.2** — mode session par défaut, tests comportementaux du service de credentials, scanner récursif de secrets et documentation alignée.
-2. **alpha.2** — stabilisation UX et états de gestion des credentials après validation alpha.1.2.
+2. **alpha.2** — choix session/local présenté sous forme de deux options explicites, explication des conséquences, état de session et retour de sauvegarde locale.
 3. **alpha.3** — première intégration réelle NVIDIA NIM, seulement après validation des fondations.
 4. **beta.1** — chat réel et normalisation des erreurs.
 5. **beta.2** — catalogue de modèles et autres providers.
