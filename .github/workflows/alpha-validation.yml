@@ -32,6 +32,8 @@ jobs:
         run: npm run test:credentials
       - name: NVIDIA NIM service tests
         run: npm run test:nvidia
+      - name: NVIDIA Netlify proxy tests
+        run: npm run test:nvidia-proxy
       - name: Alpha structural and secret-scan verification
         run: npm run verify:alpha1
       - name: Production build
