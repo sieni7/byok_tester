@@ -84,6 +84,21 @@ test('rejects malformed or empty successful responses', async (t) => {
   })
 })
 
+test('aborts a request when the timeout is reached', async () => {
+  await assert.rejects(
+    sendNvidiaChatCompletion({
+      apiKey: 'test-token',
+      model: 'meta/llama-3.1-8b-instruct',
+      prompt: 'test',
+      timeoutMs: 1,
+      fetchImpl: async (_url, init) => new Promise((_, reject) => {
+        init.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+      }),
+    }),
+    (error) => error instanceof NvidiaChatError && error.code === 'timeout' && error.message.includes('0 secondes'),
+  )
+})
+
 test('rejects an empty key or prompt before making a request', async () => {
   let called = false
   const fetchImpl = async () => { called = true; return Response.json({}) }
