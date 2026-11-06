@@ -4,7 +4,7 @@
 
 - [x] `v0.2.0-alpha.1` : socle React/TypeScript, dépendances verrouillées, types communs et registres.
 - [x] `v0.2.0-alpha.1.1 corrective` : UI pilotée par le registre, politiques d'accès au niveau modèle, séparation initiale session/local.
-- [x] `v0.2.0-alpha.1.2 corrective` : mode session par défaut sans lecture/écriture de stockage persistant ; tests comportementaux instrumentés ; scanner récursif des sources ; README et TODO alignés.
+- [ ] `v0.2.0-alpha.1.2 corrective` (implémentation poussée, validation indépendante en attente) : mode session par défaut sans lecture/écriture de stockage persistant ; tests comportementaux instrumentés ; scanner récursif des sources ; README et TODO alignés.
 - [ ] Validation indépendante alpha.1.2 : `npm run test:credentials`, `npm run verify:alpha1`, `npm run build`, `git diff --check`, revue du diff et du Preview.
 - [ ] `v0.2.0-alpha.2` : stabiliser l'UX credentials et les états de stockage après validation alpha.1.2.
 - [ ] `v0.2.0-alpha.3` : intégrer NVIDIA NIM pour un premier appel texte réel, uniquement après validation du socle.
