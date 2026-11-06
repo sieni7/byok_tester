@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, FormEvent, ReactNode } from 'react'
+import type { FormEvent, KeyboardEvent, ReactNode } from 'react'
 import { providers } from '../core/provider-registry'
 import { loadCredentials, saveCredentials } from '../services/credential-service'
 import { sendNvidiaChatCompletion } from '../services/nvidia-chat-service'
@@ -61,8 +61,6 @@ function App() {
   )
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [draftMessage, setDraftMessage] = useState('')
-  const [attachedFile, setAttachedFile] = useState<string | null>(null)
-  const [isListening, setIsListening] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [sendFeedback, setSendFeedback] = useState<string | null>(null)
@@ -152,11 +150,6 @@ function App() {
     }
   }
 
-  const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) setAttachedFile(file.name)
-  }
-
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
     if (sendingLock.current || isSending) return
@@ -177,12 +170,6 @@ function App() {
       setSendFeedback(null)
       return
     }
-    if (attachedFile) {
-      setSendError('Les pièces jointes ne sont pas prises en charge par cette première intégration NVIDIA. Retirez le fichier pour continuer.')
-      setSendFeedback(null)
-      return
-    }
-
     sendingLock.current = true
     setIsSending(true)
     setSendError(null)
@@ -217,6 +204,7 @@ function App() {
 
   return (
     <div className="app-shell" data-theme={theme}>
+      <a className="skip-link" href="#main-content">Aller au contenu principal</a>
       <aside className="sidebar">
         <div className="brand-lockup">
           <div className="brand-mark"><span /><span /><span /><span /></div>
@@ -237,11 +225,9 @@ function App() {
 
         <nav className="main-nav" aria-label="Navigation principale">
           <p className="nav-label">Workspace</p>
-          <a className="nav-item active" href="#dashboard"><Icon name="grid" /><span>Dashboard</span><span className="nav-count">01</span></a>
-          <a className="nav-item" href="#providers"><Icon name="key" /><span>API keys</span><span className="nav-count live">{configuredCount}</span></a>
-          <a className="nav-item" href="#docs"><Icon name="book" /><span>Docs & guides</span><Icon name="external" size={14} /></a>
-          <p className="nav-label nav-label-spaced">System</p>
-          <a className="nav-item" href="#settings"><Icon name="settings" /><span>Settings</span></a>
+          <a className="nav-item active" href="#chat-title"><Icon name="grid" /><span>Test NVIDIA</span><span className="nav-count">01</span></a>
+          <a className="nav-item" href="#providers"><Icon name="key" /><span>Clés API</span><span className="nav-count live">{configuredCount}</span></a>
+          <a className="nav-item" href="#settings"><Icon name="settings" /><span>Confidentialité</span></a>
         </nav>
 
         <div className="sidebar-bottom">
@@ -253,15 +239,16 @@ function App() {
         </div>
       </aside>
 
-      <main className="workspace" id="dashboard">
+      <main className="workspace" id="main-content" tabIndex={-1}>
         <header className="topbar">
           <div className="crumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
+          <nav className="mobile-nav" aria-label="Accès rapide"><a href="#chat-title">Test</a><a href="#providers">Clés API</a><a href="#settings">Confidentialité</a></nav>
           <div className="topbar-actions">
             <div className="sync-status"><i /> {storageMode === 'session' ? 'session · volatile' : storageFeedback === 'error' ? 'stockage local indisponible' : 'stockage local du navigateur'}</div>
             <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} aria-pressed={theme === 'dark'}>
               {theme === 'dark' ? '☀ Mode clair' : '☾ Mode sombre'}
             </button>
-            <button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button>
+            
           </div>
         </header>
 
@@ -282,13 +269,13 @@ function App() {
           <section className="chat-card" aria-labelledby="chat-title">
             <div className="chat-card-head">
               <div><div className="section-kicker light"><span className="pulse-dot" /> FOURNISSEUR ACTIF · ALPHA.3</div><h2 id="chat-title">Tester NVIDIA NIM</h2></div>
-              <button className="small-control" type="button"><span className="status-dot" /> Session active <Icon name="chevron" size={13} /></button>
+              <span className="small-control" aria-label="État du fournisseur : NVIDIA NIM opérationnel"><span className="status-dot" /> NVIDIA opérationnel</span>
             </div>
             <div className="chat-context">
               <div className="mini-model-icon">{configuredProvider?.shortName}</div>
               <div><span>Premier fournisseur réellement intégré</span><strong>{configuredProvider?.name} · {nvidiaModels[0]?.label}</strong></div><span className="provider-live-label">ACTIF</span>
             </div>
-            <div className="messages" aria-live="polite">
+            <div className="messages" role="log" aria-label="Échanges avec NVIDIA NIM" aria-live="polite" aria-relevant="additions">
               {messages.map((message) => (
                 <div className={`message-row ${message.role}`} key={message.id}>
                   {message.role === 'assistant' && <div className="assistant-avatar"><span /><span /><span /></div>}
@@ -299,24 +286,20 @@ function App() {
             {sendError && <div className="chat-error" role="alert">{sendError}</div>}{sendFeedback && <div className="chat-success" role="status">{sendFeedback}</div>}{isSending && <div className="chat-loading" role="status">NVIDIA NIM traite votre demande…</div>}
             {activeProvider === 'nvidia' && <div className="nvidia-notice">Connexion réelle NVIDIA NIM · votre prompt et votre clé sont transmis directement à NVIDIA. Requête ponctuelle : pas encore d’historique multi-tour, de pièce jointe ni de streaming.</div>}
             <form className="composer" onSubmit={handleSend}>
-              {attachedFile && <div className="attachment-chip"><Icon name="paperclip" size={14} /> {attachedFile}<button type="button" onClick={() => setAttachedFile(null)} aria-label="Retirer la pièce jointe">×</button></div>}
-              <textarea value={draftMessage} onChange={(event) => { setDraftMessage(event.target.value); setSendError(null); setSendFeedback(null) }} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Votre message" aria-invalid={Boolean(sendError)} disabled={isSending} />
+              <textarea value={draftMessage} onChange={(event) => { setDraftMessage(event.target.value); setSendError(null); setSendFeedback(null) }} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ce fournisseur sera bientôt disponible…'} rows={2} aria-label="Prompt à envoyer à NVIDIA NIM" aria-invalid={Boolean(sendError)} aria-describedby="prompt-help" disabled={isSending} onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); if (!isSending && draftMessage.trim()) event.currentTarget.form?.requestSubmit() } }} />
               <div className="composer-actions">
-                <div className="composer-tools">
-                  <label className="tool-button" aria-label="Joindre un fichier"><Icon name="paperclip" size={17} /><input type="file" onChange={handleFile} /></label>
-                  <button className={`tool-button ${isListening ? 'listening' : ''}`} type="button" aria-label="Activer le microphone" onClick={() => setIsListening((value) => !value)}><Icon name="mic" size={17} /></button>
-                  <span className="tool-hint">{isListening ? 'Listening...' : '⌘ + Enter to run'}</span>
-                </div>
-                <button className="send-button" type="submit" aria-label="Envoyer" disabled={isSending || !draftMessage.trim()}>{isSending ? 'Envoi…' : <Icon name="arrow" size={18} />}</button>
+                <span className="tool-hint">Ctrl + Entrée (ou ⌘ + Entrée) pour tester</span>
+                <button className="send-button" type="submit" aria-label={isSending ? 'Envoi en cours' : 'Envoyer le prompt à NVIDIA NIM'} disabled={isSending || !draftMessage.trim()}>{isSending ? 'Envoi…' : <Icon name="arrow" size={18} />}</button>
               </div>
             </form>
-            <div className="chat-footnote"><Icon name="shield" size={13} /> Messages are not stored outside this session</div>
+            <p className="sr-only" id="prompt-help">Saisissez un prompt. Ctrl et Entrée, ou Commande et Entrée sur Mac, lance le test.</p>
+            <div className="chat-footnote"><Icon name="shield" size={13} /> Les échanges restent dans cette session de navigateur.</div>
           </section>
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
             <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Ajouter une clé</button></div>
             <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'En mémoire · effacée au rechargement' : 'Enregistrée dans ce navigateur'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session temporaire' : 'stockage local*'}</div></div>
-            <div className="credential-mode-section">
+            <div className="credential-mode-section" id="settings">
               <div className="storage-mode-heading"><strong>Où conserver votre clé API ?</strong><span>Choisissez le mode de conservation. Vous pourrez en changer à tout moment.</span></div>
               <div className="credential-mode-options" role="group" aria-label="Mode de conservation des identifiants">
                 <button type="button" className={`credential-mode-option ${storageMode === 'session' ? 'selected' : ''}`} aria-pressed={storageMode === 'session'} onClick={() => changeStorageMode('session')}>
