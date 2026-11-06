@@ -8,6 +8,7 @@ function errorForStatus(status: number): NvidiaChatError {
   if (status === 401) return new NvidiaChatError('Clé NVIDIA invalide ou expirée (HTTP 401). Vérifiez-la dans le gestionnaire de clés.', 'unauthorized', status)
   if (status === 403) return new NvidiaChatError('Accès refusé par NVIDIA (HTTP 403). Vérifiez les autorisations du compte et du modèle.', 'forbidden', status)
   if (status === 429) return new NvidiaChatError('Limite de débit ou quota NVIDIA atteint (HTTP 429). Réessayez plus tard et vérifiez votre compte.', 'rate_limit', status)
+  if (status === 410) return new NvidiaChatError('Ce modèle NVIDIA n’est plus disponible sur l’endpoint hébergé (HTTP 410). Vérifiez le catalogue NVIDIA et sélectionnez un modèle actif.', 'request_failed', status)
   if (status === 504) return new NvidiaChatError('La requête NVIDIA a dépassé le délai autorisé. Réessayez.', 'timeout', status)
   if (status === 502) return new NvidiaChatError('Connexion au service NVIDIA impossible depuis le proxy. Réessayez.', 'network', status)
   if (status >= 500) return new NvidiaChatError(`Le service NVIDIA rencontre une erreur (HTTP ${status}). Réessayez plus tard.`, 'server', status)
