@@ -6,7 +6,7 @@
 
 Keydock est une interface React + TypeScript pour prototypes et expérimentations multi-provider. Le dashboard met en avant le parcours réel NVIDIA NIM ; les autres fournisseurs sont affichés comme intégrations à venir et ne doivent pas être considérés comme opérationnels.
 
-> **Statut : v0.2.0-alpha.3 — première intégration NVIDIA NIM.** Le playground peut envoyer une requête texte ponctuelle à NVIDIA NIM avec le modèle `meta/llama-3.1-8b-instruct`. Les autres fournisseurs conservent leurs réponses de démonstration ; le chat multi-tour, le streaming et les pièces jointes ne sont pas encore intégrés.
+> **Statut : v0.2.0-alpha.3 — première intégration NVIDIA NIM.** Le playground peut envoyer une requête texte ponctuelle à NVIDIA NIM avec le modèle `meta/llama-3.1-8b-instruct`. Les autres fournisseurs ne sont pas sélectionnables comme fournisseurs actifs et ne disposent pas encore d'appels réels ; le chat multi-tour, le streaming et les pièces jointes ne sont pas encore intégrés.
 
 ## Périmètre actuel
 
@@ -24,7 +24,8 @@ Le microphone reste un élément de prototype sans transcription. Les pièces jo
 
 ## Providers de départ
 
-- **NVIDIA NIM — actif en alpha.3** : endpoint `https://integrate.api.nvidia.com/v1/chat/completions` ; modèle initial `meta/llama-3.1-8b-instruct`.\n- **OpenRouter, Groq et GitHub Models — à venir** : présents dans le registre pour préparer les étapes suivantes, mais leurs appels réels ne sont pas intégrés dans cette version.
+- **NVIDIA NIM — actif en alpha.3** : endpoint `https://integrate.api.nvidia.com/v1/chat/completions` ; modèle initial `meta/llama-3.1-8b-instruct`.
+- **OpenRouter, Groq et GitHub Models — à venir** : présents dans le registre pour préparer les étapes suivantes, mais leurs appels réels ne sont pas intégrés dans cette version.
 
 La gratuité, les quotas et les tarifs sont propres à chaque modèle et peuvent dépendre du compte et de la date. Keydock ne doit jamais présenter un fournisseur entier comme gratuit sans preuve vérifiée.
 
@@ -117,7 +118,8 @@ Le build Vite est généré dans `dist/`.
 ## Principes de contribution
 
 - Aucun secret dans le code ou l'historique Git.
-- Pas de fausse indication de disponibilité, de gratuité ou de quota.\n- En alpha.3, ne jamais présenter les fournisseurs autres que NVIDIA NIM comme opérationnels.
+- Pas de fausse indication de disponibilité, de gratuité ou de quota.
+- En alpha.3, ne jamais présenter les fournisseurs autres que NVIDIA NIM comme opérationnels.
 - Pas d'appel réseau présenté comme fonctionnel s'il est simulé.
 - Préserver une architecture progressive et vérifiable.
 - Toute intégration réelle doit être testée et auditée avant activation.
