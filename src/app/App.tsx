@@ -64,7 +64,7 @@ function App() {
   const [isListening, setIsListening] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
-  const configuredCount = useMemo(() => providers.filter((provider) => Boolean(keys[provider.id])).length, [keys])
+  const configuredCount = useMemo(() => Number(Boolean(keys.nvidia)), [keys.nvidia])
 
   useEffect(() => {
     if (storageMode === 'session') {
@@ -76,7 +76,7 @@ function App() {
 
   const fallbackProvider = providers.slice(0, 1)[0]!
   const configuredProvider = providers.find((provider) => provider.id === activeProvider) ?? fallbackProvider
-  const beginAdd = () => beginEdit(providers.find((provider) => !keys[provider.id])?.id ?? fallbackProvider.id)
+  const beginAdd = () => beginEdit('nvidia')
 
   const changeStorageMode = (mode: CredentialStorageMode) => {
     if (mode === storageMode) return
@@ -142,6 +142,10 @@ function App() {
   const handleSend = async (event: FormEvent) => {
     event.preventDefault()
     if (isSending) return
+    if (activeProvider !== 'nvidia') {
+      setSendError('Ce fournisseur n’est pas encore disponible. Seul NVIDIA NIM peut être testé actuellement.')
+      return
+    }
     const text = draftMessage.trim()
     if (!text && !attachedFile) return
     if (activeProvider === 'nvidia' && !keys.nvidia) {
@@ -181,14 +185,6 @@ function App() {
       }
       return
     }
-
-    window.setTimeout(() => {
-      const provider = providers.find((item) => item.id === activeProvider) ?? fallbackProvider
-      const response = keys[activeProvider]
-        ? `Prompt préparé pour ${provider?.name}. Le branchement réseau reste volontairement désactivé dans ce prototype local.`
-        : `Votre message est prêt. Ajoutez une clé ${provider?.name} à droite pour activer ce fournisseur.`
-      setMessages((current) => [...current, { id: Date.now() + 1, role: 'assistant', text: response, meta: `${provider?.shortName} · mode local` }])
-    }, 450)
   }
 
   return (
@@ -248,7 +244,7 @@ function App() {
             <p className="intro-copy">Le premier parcours réel de Keydock : tester NVIDIA NIM avec votre propre clé, dans un environnement BYOK.</p>
           </div>
           <div className="intro-stats">
-            <div className="stat-block"><strong>{configuredCount}<small>/ {providers.length}</small></strong><span>clés enregistrées</span></div>
+            <div className="stat-block"><strong>{configuredCount}</strong><span>clé NVIDIA configurée</span></div>
             <div className="stat-divider" />
             <div className="stat-block"><strong>{storageMode === 'session' ? 'RAM' : '100%'}</strong><span>{storageMode === 'session' ? 'volatile session' : 'local storage'}</span></div>
           </div>
@@ -291,7 +287,7 @@ function App() {
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
             <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
-            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
+            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
             <div className="credential-mode-section">
               <div className="storage-mode-heading"><strong>How should Keydock keep your API keys?</strong><span>Choose where credentials are kept. You can change this at any time.</span></div>
               <div className="credential-mode-options" role="group" aria-label="Mode de conservation des identifiants">
@@ -340,6 +336,19 @@ type ProviderCardProps = {
 }
 
 function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
+  if (!isOperational) {
+    return (
+      <article className="provider-card coming-soon" aria-disabled="true">
+        <div className="provider-topline">
+          <div className={`provider-logo ${provider.accent}`}>{provider.shortName}</div>
+          <div className="provider-title"><div><h3>{provider.name}</h3><span className="coming-soon-badge">Bientôt</span></div><span>{provider.family}</span></div>
+          <span className="active-toggle coming-soon-toggle" aria-label="Fournisseur indisponible">À venir</span>
+        </div>
+        <p className="provider-description">{provider.description}</p>
+        <p className="coming-soon-note">Ce fournisseur n’est pas encore connecté. La sélection, la gestion de clé et les tests sont désactivés.</p>
+      </article>
+    )
+  }
   const hasKey = Boolean(value)
   const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'No key connected'
   return (
