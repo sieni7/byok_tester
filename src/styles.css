@@ -104,7 +104,7 @@ h1 em { color: #8b9d39; font-style: normal; }
 .chat-context > div:nth-child(2) { display: grid; gap: 2px; flex: 1; }
 .chat-context span { font-size: 9px; color: #93a196; }
 .chat-context strong { color: #f2f5e8; font-size: 11px; }
-.chat-context select { max-width: 107px; padding: 4px 2px; border: 0; color: #cbd4bd; background: transparent; text-align: right; font-size: 9px; outline: none; }
+.provider-live-label { padding: 5px 7px; border: 1px solid rgba(216,230,107,.25); border-radius: 5px; color: #d8e66b; font: 8px 'DM Mono', monospace; letter-spacing: .08em; }
 .messages { flex: 1; display: flex; flex-direction: column; gap: 21px; padding: 27px 4px 20px; position: relative; z-index: 1; overflow: auto; }
 .message-row { display: flex; gap: 9px; align-items: flex-start; }
 .message-row.user { justify-content: flex-end; }
@@ -167,6 +167,9 @@ h1 em { color: #8b9d39; font-style: normal; }
 .provider-card { position: relative; min-width: 0; padding: 17px; border: 1px solid rgba(22,33,28,.1); border-radius: 12px; background: rgba(246,246,239,.7); transition: .2s ease; }
 .provider-card:hover { background: #f8f8f2; border-color: rgba(22,33,28,.18); }
 .provider-card.featured { padding: 18px; background: #f7f8eb; border-color: #cad67d; }
+.provider-card.operational { box-shadow: inset 0 0 0 1px rgba(158,174,57,.18); }
+.provider-card.coming-soon { background: rgba(246,246,239,.45); }
+.provider-card.coming-soon .provider-description { color: #929990; }
 .provider-card.active { box-shadow: inset 0 0 0 1px rgba(158,174,57,.35); }
 .provider-topline { display: flex; gap: 9px; align-items: center; }
 .provider-logo { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 8px; font: 10px 'DM Mono', monospace; font-weight: 500; }
@@ -178,6 +181,8 @@ h1 em { color: #8b9d39; font-style: normal; }
 .provider-title h3 { margin: 0; color: var(--ink); font-size: 12px; letter-spacing: -.02em; }
 .provider-title > span { display: block; margin-top: 3px; overflow: hidden; color: #929990; font: 9px 'DM Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
 .recommendation { padding: 3px 5px; color: #667326; background: #e4edab; border-radius: 4px; font: 8px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .02em; }
+.coming-soon-badge { padding: 3px 5px; color: #858d82; background: #e8eae2; border-radius: 4px; font: 8px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .02em; }
+.coming-soon-toggle { color: #a0a89e; cursor: default; }
 .active-toggle { display: flex; align-items: center; gap: 5px; padding: 5px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #a0a89e; font: 8px 'DM Mono', monospace; white-space: nowrap; }
 .active-toggle:hover { border-color: rgba(22,33,28,.12); color: var(--ink); }
 .active-toggle span { width: 5px; height: 5px; border-radius: 50%; background: #c1c6bd; }
@@ -318,3 +323,5 @@ h1 em { color: #8b9d39; font-style: normal; }
 .app-shell[data-theme='dark'] .nvidia-notice {
   color: #aab7ad;
 }
+.app-shell[data-theme='dark'] .provider-card.coming-soon { background: rgba(27,40,32,.55); border-color: rgba(225,237,224,.1); }
+.app-shell[data-theme='dark'] .coming-soon-badge { color: #aab7ad; background: #303b33; }
