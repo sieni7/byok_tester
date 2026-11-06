@@ -18,7 +18,7 @@ const initialMessages: ChatMessage[] = [
     id: 2,
     role: 'assistant',
     text: 'Votre prompt passe par le proxy Netlify de Keydock avant d’être transmis à NVIDIA NIM ; cette alpha prend en charge une requête texte ponctuelle.',
-    meta: 'NVIDIA NIM · requête directe à la demande',
+    meta: 'NVIDIA NIM · proxy Netlify · requête ponctuelle',
   },
 ]
 
