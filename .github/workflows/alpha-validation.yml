@@ -6,6 +6,7 @@ on:
       - fix/v0.2-alpha.1.2
       - feature/v0.2-alpha.2
       - feature/v0.2-alpha.3-nvidia
+      - fix/cors-netlify-proxy-step-1-main
       - ux-4c-nvidia-test-flow
       - ux-4d-accessibility-responsive
   pull_request:
@@ -34,6 +35,8 @@ jobs:
         run: npm run test:credentials
       - name: NVIDIA NIM service tests
         run: npm run test:nvidia
+      - name: NVIDIA Netlify proxy tests
+        run: npm run test:nvidia-proxy
       - name: Alpha structural and secret-scan verification
         run: npm run verify:alpha1
       - name: Production build
