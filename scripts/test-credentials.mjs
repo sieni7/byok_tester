@@ -10,6 +10,7 @@ const tempDir = mkdtempSync(join(tmpdir(), 'keydock-credential-tests-'))
 writeFileSync(join(tempDir, 'package.json'), JSON.stringify({ type: 'module' }))
 
 // Use the TypeScript CLI instead of compiler runtime APIs, which differ across TS releases.
+// The browser-side credential service does not need Node ambient types.
 execFileSync(process.execPath, [
   'node_modules/typescript/bin/tsc',
   'src/services/credential-service.ts',
@@ -20,7 +21,6 @@ execFileSync(process.execPath, [
   '--outDir', tempDir,
   '--skipLibCheck',
   '--ignoreConfig',
-  '--types', 'node',
 ], { stdio: 'inherit' })
 
 const compiledUrl = pathToFileURL(join(tempDir, 'credential-service.js')).href
