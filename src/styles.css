@@ -325,3 +325,12 @@ h1 em { color: #8b9d39; font-style: normal; }
 }
 .app-shell[data-theme='dark'] .provider-card.coming-soon { background: rgba(27,40,32,.55); border-color: rgba(225,237,224,.1); }
 .app-shell[data-theme='dark'] .coming-soon-badge { color: #aab7ad; background: #303b33; }
+
+
+.key-editor-error {
+  margin: 7px 0 0;
+  color: #b34f3c;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.app-shell[data-theme='dark'] .key-editor-error { color: #ffb6a8; }
