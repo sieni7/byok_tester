@@ -6,7 +6,7 @@
 
 Keydock est une interface React + TypeScript pensée pour les prototypes, les équipes produit et les développeurs qui veulent tester rapidement plusieurs providers LLM depuis un même espace. Le dashboard réunit un playground conversationnel à gauche et un gestionnaire de credentials à droite, dans une interface claire, dense et responsive.
 
-> **Statut : prototype UI fonctionnel** — le stockage local, la sélection de provider et les interactions de gestion sont opérationnels. L’envoi réseau vers les fournisseurs doit encore être branché derrière une architecture de production adaptée.
+> **Statut : v0.2.0-alpha.1.1 corrective — fondations validées** — l’interface est pilotée par le registre, les politiques d’accès sont rattachées aux modèles, et les modes session/local sont explicitement séparés. Aucun provider réel n’est encore appelé.
 
 ## Ce que le prototype couvre
 
@@ -24,14 +24,14 @@ Keydock est une interface React + TypeScript pensée pour les prototypes, les é
 Un endpoint compatible OpenAI pour changer de modèle sans réécrire l’intégration. Keydock le présente comme le meilleur point d’entrée pour expérimenter rapidement avec plusieurs familles de modèles.
 
 - Endpoint de référence : `openrouter.ai/api/v1`
-- Limites affichées dans le prototype : environ `20 requêtes/minute` et `50 requêtes/jour` pour l’offre gratuite
+- Accès : politique au niveau du modèle ; tarif et quota restent `unknown` tant qu’un modèle, un compte et une source datée n’ont pas été vérifiés
 - Usage conseillé : prototypage polyvalent, comparaison de modèles, itération produit
 
 ### Groq — fallback haute vitesse
 Une option orientée performance lorsque le débit et la latence deviennent prioritaires.
 
 - Endpoint de référence : `api.groq.com/openai/v1`
-- Limite affichée dans le prototype : environ `1 000 requêtes/jour`
+- Accès : politique au niveau du modèle ; ne pas assimiler le provider entier à une offre gratuite
 - Usage conseillé : traitements textuels en volume, benchmarks, boucles de test rapides
 
 ### GitHub Models — démarrage sans friction
@@ -115,6 +115,8 @@ Dans Netlify, sélectionnez le dépôt GitHub, conservez ces valeurs puis lancez
 ```
 
 ## Roadmap proposée
+
+La série v0.2 est livrée par étapes : `alpha.1` socle initial, `alpha.1.1` corrective et fondations validées, `alpha.2` extension du credential UX, `alpha.3` premier appel NVIDIA NIM, `beta.1` chat réel et erreurs normalisées, `beta.2` catalogue multi-provider, `rc.1` comparateur et validation, puis `v0.2.0` stable.
 
 - Connecter le chat à un proxy sécurisé et à des modèles réels.
 - Ajouter un coffre chiffré, la rotation et la révocation des credentials.
