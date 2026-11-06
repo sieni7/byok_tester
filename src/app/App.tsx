@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { providers } from '../core/provider-registry'
 import { loadCredentials, saveCredentials } from '../services/credential-service'
+import { sendNvidiaChatCompletion } from '../services/nvidia-chat-service'
+import { nvidiaModels } from '../core/nvidia-models'
 import type { CredentialStorageMode } from '../services/credential-service'
 import type { ChatMessage, Provider, ProviderId } from '../types'
 
@@ -60,6 +62,8 @@ function App() {
   const [draftMessage, setDraftMessage] = useState('')
   const [attachedFile, setAttachedFile] = useState<string | null>(null)
   const [isListening, setIsListening] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const configuredCount = useMemo(() => providers.filter((provider) => Boolean(keys[provider.id])).length, [keys])
 
   useEffect(() => {
@@ -135,14 +139,49 @@ function App() {
     if (file) setAttachedFile(file.name)
   }
 
-  const handleSend = (event: FormEvent) => {
+  const handleSend = async (event: FormEvent) => {
     event.preventDefault()
+    if (isSending) return
     const text = draftMessage.trim()
     if (!text && !attachedFile) return
+    if (activeProvider === 'nvidia' && !keys.nvidia) {
+      setSendError('Ajoutez une clé NVIDIA NIM dans le gestionnaire de clés avant l’envoi.')
+      return
+    }
+    if (activeProvider === 'nvidia' && attachedFile) {
+      setSendError('Les pièces jointes ne sont pas prises en charge par cette première intégration NVIDIA. Retirez le fichier pour continuer.')
+      return
+    }
+
     const submittedText = text || `Fichier joint : ${attachedFile}`
+    setSendError(null)
     setMessages((current) => [...current, { id: Date.now(), role: 'user', text: submittedText }])
     setDraftMessage('')
     setAttachedFile(null)
+
+    if (activeProvider === 'nvidia') {
+      setIsSending(true)
+      try {
+        const model = nvidiaModels[0]!
+        const response = await sendNvidiaChatCompletion({
+          apiKey: keys.nvidia,
+          prompt: text,
+          model: model.id,
+        })
+        setMessages((current) => [...current, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          text: response,
+          meta: `NVIDIA NIM · ${model.label}`,
+        }])
+      } catch (error) {
+        setSendError(error instanceof Error ? error.message : 'Une erreur inattendue est survenue pendant l’appel NVIDIA.')
+      } finally {
+        setIsSending(false)
+      }
+      return
+    }
+
     window.setTimeout(() => {
       const provider = providers.find((item) => item.id === activeProvider) ?? fallbackProvider
       const response = keys[activeProvider]
@@ -224,7 +263,7 @@ function App() {
             <div className="chat-context">
               <div className="mini-model-icon">{configuredProvider?.shortName}</div>
               <div><span>Active provider</span><strong>{configuredProvider?.name}</strong></div>
-              <select aria-label="Choisir le fournisseur actif" value={activeProvider} onChange={(event) => setActiveProvider(event.target.value as ProviderId)}>
+              <select aria-label="Choisir le fournisseur actif" value={activeProvider} onChange={(event) => { setActiveProvider(event.target.value as ProviderId); setSendError(null) }}>
                 {providers.map((provider) => <option value={provider.id} key={provider.id}>{provider.name}{keys[provider.id] ? ' · ready' : ''}</option>)}
               </select>
             </div>
@@ -236,16 +275,18 @@ function App() {
                 </div>
               ))}
             </div>
+            {sendError && <div className="chat-error" role="alert">{sendError}</div>}
+            {activeProvider === 'nvidia' && <div className="nvidia-notice">Requête texte directe vers NVIDIA NIM · le message envoyé est transmis à NVIDIA. Pas de pièce jointe ni de streaming dans cette alpha.</div>}
             <form className="composer" onSubmit={handleSend}>
               {attachedFile && <div className="attachment-chip"><Icon name="paperclip" size={14} /> {attachedFile}<button type="button" onClick={() => setAttachedFile(null)} aria-label="Retirer la pièce jointe">×</button></div>}
-              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder="Ask anything about your setup..." rows={2} aria-label="Votre message" />
+              <textarea value={draftMessage} onChange={(event) => setDraftMessage(event.target.value)} placeholder={activeProvider === 'nvidia' ? 'Envoyer un prompt à NVIDIA NIM…' : 'Ask anything about your setup...'} rows={2} aria-label="Votre message" disabled={isSending} />
               <div className="composer-actions">
                 <div className="composer-tools">
                   <label className="tool-button" aria-label="Joindre un fichier"><Icon name="paperclip" size={17} /><input type="file" onChange={handleFile} /></label>
                   <button className={`tool-button ${isListening ? 'listening' : ''}`} type="button" aria-label="Activer le microphone" onClick={() => setIsListening((value) => !value)}><Icon name="mic" size={17} /></button>
                   <span className="tool-hint">{isListening ? 'Listening...' : '⌘ + Enter to run'}</span>
                 </div>
-                <button className="send-button" type="submit" aria-label="Envoyer"><Icon name="arrow" size={18} /></button>
+                <button className="send-button" type="submit" aria-label="Envoyer" disabled={isSending}>{isSending ? '…' : <Icon name="arrow" size={18} />}</button>
               </div>
             </form>
             <div className="chat-footnote"><Icon name="shield" size={13} /> Messages are not stored outside this session</div>
