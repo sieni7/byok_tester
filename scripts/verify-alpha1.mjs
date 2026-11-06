@@ -78,7 +78,7 @@ const secretPatterns = [
   new RegExp('sk-' + '[A-Za-z0-9]{20,}'),
   new RegExp('gsk' + '_' + '[A-Za-z0-9]{20,}'),
   new RegExp('github' + '_pat_' + '[A-Za-z0-9_]{20,}'),
-  new RegExp('Bearer\\\\s+' + '[A-Za-z0-9._-]{20,}', 'i'),
+  new RegExp('Bearer' + String.fromCharCode(92) + 's+' + '[A-Za-z0-9._-]{20,}', 'i'),
 ]
 for (const file of scannedFiles) {
   if (path.resolve(file) === path.resolve('scripts/verify-alpha1.mjs')) continue
