@@ -1,6 +1,6 @@
 import type { ModelDefinition } from '../types'
 
-/** Metadata placeholder for alpha.1; populated only after NVIDIA access is verified. */
+/** Model ID is listed in NVIDIA's hosted NIM API catalog; pricing, quota and account access remain unverified. */
 export const nvidiaModels: ModelDefinition[] = [
   {
     id: 'meta/llama-3.1-8b-instruct',
