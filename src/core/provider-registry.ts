@@ -32,6 +32,16 @@ export const providers: Provider[] = [
     accent: 'blue',
     badge: 'Sans friction',
   },
+  {
+    id: 'nvidia',
+    name: 'NVIDIA NIM',
+    shortName: 'NV',
+    family: 'Inference hébergée NVIDIA',
+    description: 'Premier endpoint NIM connecté pour des requêtes texte réelles.',
+    endpoint: 'integrate.api.nvidia.com/v1',
+    accent: 'blue',
+    badge: 'NIM',
+  },
 ]
 
 export const providerById = new Map(providers.map((provider) => [provider.id, provider]))
