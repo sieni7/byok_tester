@@ -33,6 +33,7 @@ test('rejects malformed JSON and invalid input fields', async (t) => {
     ['missing prompt', JSON.stringify({ ...validInput, prompt: '  ' }), 400],
     ['unknown model', JSON.stringify({ ...validInput, model: 'unknown/model' }), 400],
     ['oversized prompt', JSON.stringify({ ...validInput, prompt: 'x'.repeat(25 * 1024) }), 413],
+    ['oversized request body', JSON.stringify({ ...validInput, extra: 'x'.repeat(33 * 1024) }), 413],
   ]) {
     await t.test(name, async () => {
       const response = await nvidiaProxy(request(body))
