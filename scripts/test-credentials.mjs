@@ -17,13 +17,13 @@ execFileSync(process.execPath, [
   '--target', 'ES2022',
   '--module', 'ESNext',
   '--moduleResolution', 'Bundler',
-  '--rootDir', 'src/services',
+  '--rootDir', 'src',
   '--outDir', tempDir,
   '--skipLibCheck',
   '--ignoreConfig',
 ], { stdio: 'inherit' })
 
-const compiledUrl = pathToFileURL(join(tempDir, 'credential-service.js')).href
+const compiledUrl = pathToFileURL(join(tempDir, 'services', 'credential-service.js')).href
 const { loadCredentials, saveCredentials, emptyCredentials, CREDENTIAL_STORAGE_KEY } = await import(compiledUrl)
 const source = readFileSync('src/services/credential-service.ts', 'utf8')
 assert.match(source, /mode === 'session'/, 'credential service must explicitly handle session mode')
