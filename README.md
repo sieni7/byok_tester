@@ -6,7 +6,7 @@
 
 Keydock est une interface React + TypeScript pour prototypes et expérimentations multi-provider. Le dashboard réunit un playground de démonstration et un gestionnaire de credentials.
 
-> **Statut : v0.2.0-alpha.1.2 corrective.** Le mode session est le comportement par défaut. Le mode local est disponible sur activation explicite. Aucun appel réel à un fournisseur IA n'est encore effectué ; NVIDIA NIM n'est pas intégré.
+> **Statut : v0.2.0-alpha.1.2 corrective — implémentation en cours de validation.** Le mode session est le comportement par défaut. Le mode local est disponible sur activation explicite. Aucun appel réel à un fournisseur IA n'est encore effectué ; NVIDIA NIM n'est pas intégré.
 
 ## Périmètre actuel
 
