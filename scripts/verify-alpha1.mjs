@@ -92,6 +92,20 @@ assert.ok(app.includes('setSendError(error instanceof Error ? error.message'), '
 assert.ok(!app.includes("setDraftMessage('')"), 'The test flow must not clear the prompt after submission')
 assert.ok(app.includes('setMessages((current) => ['), 'The conversation must record the prompt only after a successful provider response')
 
+assert.ok(app.includes('Aller au contenu principal'), 'A visible-on-focus skip link must be available')
+assert.ok(app.includes('aria-label="Navigation principale"'), 'Primary navigation must be named')
+assert.ok(app.includes('role="log" aria-label="Échanges avec NVIDIA NIM"'), 'Conversation updates must expose a labeled log')
+assert.ok(app.includes('Ctrl + Entrée (ou ⌘ + Entrée) pour tester'), 'The keyboard shortcut must be documented')
+assert.ok(app.includes('requestSubmit()'), 'Ctrl/Cmd+Enter must submit the prompt')
+assert.ok(!app.includes('attachedFile') && !app.includes('isListening'), 'Unsupported attachment and microphone controls must be removed')
+assert.ok(!app.includes('href="#docs"'), 'Navigation must not point to a missing documentation anchor')
+assert.ok(app.includes('className="mobile-nav"'), 'Mobile users must have visible primary navigation')
+assert.ok(app.includes('id="settings"'), 'Settings navigation must target a real section')
+assert.ok(css.includes(':focus-visible'), 'Keyboard focus must be visible')
+assert.ok(css.includes('min-height: 44px'), 'Interactive controls must target 44px touch height')
+assert.ok(css.includes('prefers-reduced-motion: reduce'), 'Reduced-motion preference must be respected')
+assert.ok(css.includes('@media (max-width: 340px)'), 'Narrow 320px screens must have a dedicated layout adjustment')
+
 // Recursively inspect source-like files. Excluded directories are generated/dependency trees only.
 const excludedDirectories = new Set(['node_modules', 'dist', '.git', 'coverage'])
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'])
