@@ -40,6 +40,7 @@ for (const [name, version] of Object.entries(expectedVersions)) {
 assert.equal(packageJson.dependencies.typescript, undefined, 'Build tooling must not be a runtime dependency')
 
 const app = read('src/app/App.tsx')
+const css = read('src/styles.css')
 const providers = read('src/core/provider-registry.ts')
 const models = read('src/core/model-registry.ts')
 const policies = read('src/core/access-policy.ts')
