@@ -1,0 +1,127 @@
+/* Theme overrides: the light theme remains the original default design. */
+.app-shell[data-theme='dark'] {
+  color: #e5ece3;
+  background: #111914;
+  --ink: #e5ece3;
+  --muted: #a0ada2;
+  --line: rgba(225, 237, 224, .13);
+  --paper: #202a23;
+  --deep: #0b130f;
+}
+
+.app-shell[data-theme='dark'] .sidebar {
+  background: #17221b;
+  border-right-color: rgba(225, 237, 224, .1);
+}
+.app-shell[data-theme='dark'] .workspace,
+.app-shell[data-theme='dark'] .topbar {
+  color: #e5ece3;
+}
+.app-shell[data-theme='dark'] .topbar {
+  border-bottom-color: rgba(225, 237, 224, .12);
+}
+.app-shell[data-theme='dark'] .brand-caption,
+.app-shell[data-theme='dark'] .workspace-copy span,
+.app-shell[data-theme='dark'] .profile-row span,
+.app-shell[data-theme='dark'] .nav-label,
+.app-shell[data-theme='dark'] .crumbs,
+.app-shell[data-theme='dark'] .sync-status,
+.app-shell[data-theme='dark'] .intro-copy,
+.app-shell[data-theme='dark'] .stat-block > span,
+.app-shell[data-theme='dark'] .section-kicker,
+.app-shell[data-theme='dark'] .provider-description,
+.app-shell[data-theme='dark'] .security-caption {
+  color: #9aa99d;
+}
+.app-shell[data-theme='dark'] .workspace-switcher,
+.app-shell[data-theme='dark'] .keys-summary,
+.app-shell[data-theme='dark'] .provider-card,
+.app-shell[data-theme='dark'] .provider-card:hover {
+  background: #1b2820;
+  border-color: rgba(225, 237, 224, .12);
+  color: #e5ece3;
+}
+.app-shell[data-theme='dark'] .provider-card.featured {
+  background: #27321d;
+  border-color: #69783b;
+}
+.app-shell[data-theme='dark'] .nav-item { color: #a8b5aa; }
+.app-shell[data-theme='dark'] .nav-item:hover { color: #f0f5ed; background: rgba(255,255,255,.07); }
+.app-shell[data-theme='dark'] .nav-item.active { background: #d8e66b; color: #1c2815; }
+.app-shell[data-theme='dark'] .nav-item.active svg { color: #35421c; }
+.app-shell[data-theme='dark'] .brand-mark span:nth-child(1),
+.app-shell[data-theme='dark'] .brand-mark span:nth-child(3) { background: #e5ece3; }
+.app-shell[data-theme='dark'] .brand-name,
+.app-shell[data-theme='dark'] h1,
+.app-shell[data-theme='dark'] .keys-area h2,
+.app-shell[data-theme='dark'] .provider-title h3,
+.app-shell[data-theme='dark'] .summary-main strong,
+.app-shell[data-theme='dark'] .stat-block strong {
+  color: #e5ece3;
+}
+.app-shell[data-theme='dark'] h1 em { color: #d8e66b; }
+.app-shell[data-theme='dark'] .top-settings,
+.app-shell[data-theme='dark'] .icon-button { color: #c1cec3; }
+.app-shell[data-theme='dark'] .theme-toggle {
+  color: #e6eddf;
+  background: #26342b;
+  border-color: rgba(225, 237, 224, .18);
+}
+.app-shell[data-theme='dark'] .add-key-button,
+.app-shell[data-theme='dark'] .storage-mode-row select,
+.app-shell[data-theme='dark'] .key-input-row input {
+  color: #e5ece3;
+  background: #26342b;
+  border-color: rgba(225, 237, 224, .18);
+}
+.app-shell[data-theme='dark'] .summary-main span,
+.app-shell[data-theme='dark'] .provider-title > span,
+.app-shell[data-theme='dark'] .provider-metrics span,
+.app-shell[data-theme='dark'] .key-label,
+.app-shell[data-theme='dark'] .editor-actions,
+.app-shell[data-theme='dark'] .storage-mode-row {
+  color: #9aa99d;
+}
+.app-shell[data-theme='dark'] .provider-metrics {
+  border-top-color: rgba(225, 237, 224, .12);
+  border-bottom-color: rgba(225, 237, 224, .12);
+}
+.app-shell[data-theme='dark'] .provider-metrics strong,
+.app-shell[data-theme='dark'] .key-status strong,
+.app-shell[data-theme='dark'] .endpoint-text {
+  color: #d6e2d5 !important;
+}
+.app-shell[data-theme='dark'] .active-toggle { color: #a9b6aa; }
+.app-shell[data-theme='dark'] .active-toggle.selected {
+  color: #e5f29c;
+  background: #394827;
+}
+.app-shell[data-theme='dark'] .plain-icon { color: #aab8ac; }
+.app-shell[data-theme='dark'] .plain-icon:hover { color: #f0f5ed; background: rgba(255,255,255,.09); }
+.app-shell[data-theme='dark'] .key-editor { border-top-color: rgba(225, 237, 224, .18); }
+.app-shell[data-theme='dark'] .key-editor label { color: #b9c7ba; }
+.app-shell[data-theme='dark'] .storage-feedback.success { color: #c8df8a; }
+.app-shell[data-theme='dark'] .storage-feedback.error { color: #ffb5a8; }
+
+.theme-toggle {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(22, 33, 28, .13);
+  border-radius: 7px;
+  background: #f6f6ef;
+  color: #344238;
+  font: 9px 'DM Mono', monospace;
+}
+.storage-feedback {
+  margin: -5px 0 12px;
+  font: 9px 'DM Mono', monospace;
+  line-height: 1.5;
+}
+.storage-feedback.success { color: #71822e; }
+.storage-feedback.error { color: #b34f3c; }
+.copy-error {
+  margin-top: 7px;
+  color: #b34f3c;
+  font: 9px 'DM Mono', monospace;
+  line-height: 1.5;
+}
