@@ -16,7 +16,8 @@ Keydock est une interface React + TypeScript pour prototypes et expérimentation
 | Gestion des clés | Ajout, modification, suppression, copie et affichage masqué |
 | Providers | OpenRouter, Groq et GitHub Models dans le registre |
 | Politiques d'accès | Rattachées aux modèles ; inconnues tant qu'elles ne sont pas vérifiées |
-| Stockage | Session volatile par défaut ; persistance navigateur facultative |
+| Stockage | Session volatile par défaut ; persistance navigateur facultative avec retour d'état |
+| Apparence | Thèmes clair et sombre ; choix manuel temporaire, initialisé selon le système |
 | Déploiement | SPA statique, build Vite et configuration Netlify |
 
 Les commandes microphone et pièce jointe sont des éléments d'interface de prototype : le microphone ne réalise pas de transcription et la pièce jointe ne transmet ni n'analyse le contenu du fichier.
@@ -45,6 +46,10 @@ L'utilisateur peut sélectionner explicitement le stockage local du navigateur. 
 **Avertissement :** `localStorage` n'est pas un coffre sécurisé ni un stockage chiffré. Toute personne ayant accès au profil du navigateur peut potentiellement lire les valeurs. Ce mode est réservé au prototype local et ne constitue pas une architecture de production.
 
 Aucune clé réelle ne doit être ajoutée au dépôt, aux exemples, aux captures d'écran ou aux logs. Avant toute mise en production, les appels fournisseurs directs depuis le navigateur devront être réévalués : ils exposent nécessairement la clé au contexte client. Prévoir un proxy serveur/vault avec contrôle d'accès, rotation, journalisation expurgée et limites de débit.
+
+## Apparence
+
+Keydock propose un thème clair et un thème sombre. Le thème initial suit la préférence système du navigateur ; le basculement manuel reste actif pendant la session courante et ne nécessite aucun stockage persistant.
 
 ## Architecture du dépôt
 
