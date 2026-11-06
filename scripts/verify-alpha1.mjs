@@ -11,6 +11,8 @@ const requiredFiles = [
   'src/core/model-registry.ts',
   'src/core/access-policy.ts',
   'src/services/credential-service.ts',
+  'src/services/nvidia-chat-service.ts',
+  'src/core/nvidia-models.ts',
   'scripts/test-credentials.mjs',
   '.nvmrc',
 ]
@@ -25,7 +27,7 @@ const expectedVersions = {
   vite: '8.3.6',
   '@vitejs/plugin-react': '6.2.1',
 }
-assert.equal(packageJson.version, '0.2.0-alpha.2')
+assert.equal(packageJson.version, '0.2.0-alpha.3')
 assert.equal(lockfile.version, packageJson.version, 'package-lock root version drift')
 assert.equal(lockfile.packages[''].version, packageJson.version, 'package-lock package version drift')
 assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0')
@@ -42,6 +44,8 @@ const providers = read('src/core/provider-registry.ts')
 const models = read('src/core/model-registry.ts')
 const policies = read('src/core/access-policy.ts')
 const credentials = read('src/services/credential-service.ts')
+const nvidiaService = read('src/services/nvidia-chat-service.ts')
+const nvidiaModels = read('src/core/nvidia-models.ts')
 assert.ok(app.includes('providers.map('), 'Provider UI must be generated from the registry')
 assert.ok(!/providers\[(?:0|1|2)\]/.test(app), 'Provider UI must not rely on positional registry entries')
 assert.ok(!/provider\.metric|provider\.metricLabel/.test(app), 'Provider UI must not read provider-level quotas')
@@ -50,6 +54,11 @@ assert.ok(!/metric:|metricLabel:|accessPolicyId:/.test(providers), 'Provider reg
 assert.ok(policies.includes('unknown-unverified'), 'Unknown access policy must be explicit')
 assert.ok(!/pricing: 'free'/.test(policies), 'Unverified provider-level free claims must be absent')
 assert.ok(models.includes('accessPolicyId'), 'Model registry must own access policy references')
+assert.ok(nvidiaModels.includes('meta/llama-3.1-8b-instruct'), 'NVIDIA NIM model identifier must be registered')
+assert.ok(nvidiaModels.includes('unknown-unverified'), 'NVIDIA model access policy must remain unverified')
+assert.ok(nvidiaService.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'NVIDIA NIM endpoint must be explicit')
+assert.ok(nvidiaService.includes('Authorization:'), 'NVIDIA requests must use bearer authentication')
+assert.ok(!nvidiaService.includes('console.log'), 'NVIDIA service must not log request credentials')
 assert.ok(app.includes("useState<CredentialStorageMode>('session')"), 'Session must be the default credential mode')
 assert.ok(app.includes("loadCredentials('session')"), 'Startup must not load persistent credentials')
 assert.ok(app.includes('credential-mode-options'), 'Credential modes must be presented as explicit options')
@@ -95,4 +104,4 @@ for (const file of scannedFiles) {
 }
 
 execFileSync(process.execPath, ['scripts/test-credentials.mjs'], { stdio: 'inherit' })
-console.log(`alpha.2 verification passed; recursively scanned ${scannedFiles.length - 1} source files`)
+console.log(`alpha.3 verification passed; recursively scanned ${scannedFiles.length - 1} source files`)
