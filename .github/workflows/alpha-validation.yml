@@ -7,6 +7,7 @@ on:
       - feature/v0.2-alpha.2
       - feature/v0.2-alpha.3-nvidia
       - ux-4c-nvidia-test-flow
+      - ux-4d-accessibility-responsive
   pull_request:
     branches:
       - main
