@@ -32,5 +32,9 @@
 - [x] Ajout, modification, suppression, copie et masquage/révélation des clés.
 - [x] Mode session volatil par défaut : aucun accès à localStorage au démarrage.
 - [x] Mode local facultatif avec avertissement explicite sur l'absence de chiffrement.
+- [x] Confirmation avant basculement susceptible de remplacer les clés visibles en mémoire.
+- [x] Retour d'état explicite si l'enregistrement local réussit ou échoue.
+- [x] Copie presse-papiers avec gestion des API absentes et des refus d'autorisation.
+- [x] Thème clair/sombre, initialisé sur la préférence système et commutable pendant la session.
 - [x] Tests runtime vérifiant l'absence d'accès au stockage en mode session, le chargement/sauvegarde locale et le fallback sur stockage indisponible.
 - [ ] Étudier un proxy/vault serveur avant toute exposition publique des appels fournisseurs.
