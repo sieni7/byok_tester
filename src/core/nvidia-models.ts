@@ -1,11 +1,11 @@
 import type { ModelDefinition } from '../types'
 
-/** Listed in NVIDIA's hosted NIM catalog; account entitlement and runtime availability still require a real request. */
+/** NVIDIA currently marks the free hosted endpoint as available; account-level access still requires a real request. */
 export const nvidiaModels: ModelDefinition[] = [
   {
-    id: 'meta/llama-3.3-70b-instruct',
+    id: 'openai/gpt-oss-20b',
     providerId: 'nvidia',
-    label: 'Llama 3.3 70B Instruct',
+    label: 'GPT-OSS 20B',
     capabilities: ['text'],
     accessPolicyId: 'unknown-unverified',
   },
