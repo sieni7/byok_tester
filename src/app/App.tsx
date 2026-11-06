@@ -248,7 +248,7 @@ function App() {
             <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} aria-pressed={theme === 'dark'}>
               {theme === 'dark' ? '☀ Mode clair' : '☾ Mode sombre'}
             </button>
-            
+
           </div>
         </header>
 
