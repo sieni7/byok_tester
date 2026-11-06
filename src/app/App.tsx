@@ -55,6 +55,7 @@ function App() {
   const [copied, setCopied] = useState<ProviderId | null>(null)
   const [copyError, setCopyError] = useState<ProviderId | null>(null)
   const [storageFeedback, setStorageFeedback] = useState<'saved' | 'error' | null>(null)
+  const [keyEditorError, setKeyEditorError] = useState<string | null>(null)
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
   )
@@ -91,22 +92,37 @@ function App() {
     setKeys(loadCredentials(mode))
     setOpenEditor(null)
     setDraftKey('')
+    setKeyEditorError(null)
     setRevealed(new Set())
   }
 
   const beginEdit = (provider: ProviderId) => {
     setOpenEditor(provider)
     setDraftKey(keys[provider])
+    setKeyEditorError(null)
   }
 
   const saveKey = () => {
     if (!openEditor) return
-    setKeys((current) => ({ ...current, [openEditor]: draftKey.trim() }))
+    const normalizedKey = draftKey.trim()
+    if (!normalizedKey) {
+      setKeyEditorError('Saisissez une clé API avant de l’enregistrer. Pour retirer une clé existante, utilisez « Supprimer ».')
+      return
+    }
+    if (keys[openEditor] && keys[openEditor] !== normalizedKey) {
+      const confirmed = window.confirm('Remplacer la clé actuellement enregistrée dans Keydock ? La nouvelle clé remplacera uniquement la copie conservée par cette application.')
+      if (!confirmed) return
+    }
+    setKeys((current) => ({ ...current, [openEditor]: normalizedKey }))
     setOpenEditor(null)
     setDraftKey('')
+    setKeyEditorError(null)
   }
 
   const deleteKey = (provider: ProviderId) => {
+    if (!keys[provider]) return
+    const confirmed = window.confirm('Supprimer la copie de cette clé conservée dans Keydock ? Cette action ne révoque pas la clé auprès du fournisseur. Pour la rendre inutilisable, révoquez-la aussi depuis le compte NVIDIA.')
+    if (!confirmed) return
     setKeys((current) => ({ ...current, [provider]: '' }))
     if (activeProvider === provider) setActiveProvider(fallbackProvider.id)
   }
@@ -229,7 +245,7 @@ function App() {
         <header className="topbar">
           <div className="crumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
           <div className="topbar-actions">
-            <div className="sync-status"><i /> {storageMode === 'session' ? 'session only · volatile' : storageFeedback === 'error' ? 'local save unavailable' : 'local browser storage'}</div>
+            <div className="sync-status"><i /> {storageMode === 'session' ? 'session · volatile' : storageFeedback === 'error' ? 'stockage local indisponible' : 'stockage local du navigateur'}</div>
             <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} aria-pressed={theme === 'dark'}>
               {theme === 'dark' ? '☀ Mode clair' : '☾ Mode sombre'}
             </button>
@@ -287,27 +303,27 @@ function App() {
 
           <section className="keys-area" id="providers" aria-labelledby="keys-title">
             <div className="keys-head"><div><div className="section-kicker">FOURNISSEUR DE L’ALPHA.3</div><h2 id="keys-title">NVIDIA d’abord</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
-            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
+            <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'Aucune clé NVIDIA' : 'Clé NVIDIA configurée'}</strong><span>{storageMode === 'session' ? 'En mémoire · effacée au rechargement' : 'Enregistrée dans ce navigateur'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
             <div className="credential-mode-section">
-              <div className="storage-mode-heading"><strong>How should Keydock keep your API keys?</strong><span>Choose where credentials are kept. You can change this at any time.</span></div>
+              <div className="storage-mode-heading"><strong>Où conserver votre clé API ?</strong><span>Choisissez le mode de conservation. Vous pourrez en changer à tout moment.</span></div>
               <div className="credential-mode-options" role="group" aria-label="Mode de conservation des identifiants">
                 <button type="button" className={`credential-mode-option ${storageMode === 'session' ? 'selected' : ''}`} aria-pressed={storageMode === 'session'} onClick={() => changeStorageMode('session')}>
-                  <span className="mode-option-title">Session only <span className="mode-recommended">Recommended</span></span>
-                  <span className="mode-option-description">Kept in memory only. Keys are cleared when you reload or close this tab. Nothing is written to browser storage.</span>
+                  <span className="mode-option-title">Session uniquement <span className="mode-recommended">Recommandé</span></span>
+                  <span className="mode-option-description">La clé reste en mémoire vive. Elle disparaît au rechargement ou à la fermeture de l’onglet. Rien n’est écrit dans le stockage persistant du navigateur.</span>
                 </button>
                 <button type="button" className={`credential-mode-option ${storageMode === 'local' ? 'selected' : ''}`} aria-pressed={storageMode === 'local'} onClick={() => changeStorageMode('local')}>
-                  <span className="mode-option-title">Local browser storage</span>
-                  <span className="mode-option-description">Keeps keys in this browser between visits. This is convenient, but localStorage is not encrypted or a secure vault.</span>
+                  <span className="mode-option-title">Stockage local du navigateur</span>
+                  <span className="mode-option-description">La clé est conservée dans le localStorage de ce navigateur entre les visites. Ce stockage n’est pas chiffré et ne constitue pas un coffre-fort sécurisé.</span>
                 </button>
               </div>
             </div>
             {storageMode === 'session'
               ? <p className="storage-feedback session" role="status">Session mode active: no credentials are read from or written to persistent browser storage.</p>
-              : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Échec de sauvegarde : le navigateur bloque ou ne permet pas le stockage local. Vos clés ne sont pas persistées.' : storageFeedback === 'saved' ? 'Sauvegarde locale confirmée.' : 'Vérification du stockage local…'}</p>}
+              : <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Stockage local indisponible : le navigateur bloque l’accès à localStorage. La clé reste utilisable en mémoire dans cet onglet, mais elle ne sera pas conservée après rechargement. Vous pouvez repasser en mode session.' : storageFeedback === 'saved' ? 'Enregistrement local confirmé dans ce navigateur. Attention : la clé n’est pas chiffrée.' : 'Vérification du stockage local…'}</p>}
             <div className="provider-list">
-              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
+              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isOperational={provider.id === 'nvidia'} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} keyEditorError={keyEditorError} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => { setOpenEditor(null); setKeyEditorError(null) }} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
-            <p className="security-caption">* Local browser storage is not a secure vault. Session mode is volatile and writes nothing to the credentials store.</p>
+            <p className="security-caption">Le mode session est temporaire : aucune clé n’est lue depuis ou écrite dans le stockage persistant. Le mode local utilise le localStorage du navigateur, sans chiffrement. Supprimer une clé ici ne la révoque pas chez NVIDIA.</p>
           </section>
         </div>
       </main>
@@ -322,6 +338,7 @@ type ProviderCardProps = {
   isOperational: boolean
   isOpen: boolean
   draftKey: string
+  keyEditorError: string | null
   revealed: boolean
   copied: boolean
   copyError: boolean
@@ -335,7 +352,7 @@ type ProviderCardProps = {
   onDelete: () => void
 }
 
-function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
+function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftKey, keyEditorError, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
   if (!isOperational) {
     return (
       <article className="provider-card coming-soon" aria-disabled="true">
@@ -366,7 +383,7 @@ function ProviderCard({ provider, value, isActive, isOperational, isOpen, draftK
       </div>
       {copied && <div className="copied-toast" role="status">Copié dans le presse-papiers</div>}
       {copyError && <div className="copy-error" role="alert">Copie impossible. Vérifiez les autorisations du navigateur ou utilisez la sélection manuelle.</div>}
-      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Paste your {provider.name} key</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus value={draftKey} onChange={(event) => onDraft(event.target.value)} placeholder="sk-..." /><button type="button" onClick={onSave}>Save</button></div><div className="editor-actions"><span>Stored in current credential mode</span><button type="button" onClick={onCancel}>Cancel</button></div></div>}
+      {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Clé API {provider.name}</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus autoComplete="off" spellCheck={false} value={draftKey} onChange={(event) => { onDraft(event.target.value) }} placeholder="Collez votre clé API NVIDIA" aria-invalid={Boolean(keyEditorError)} aria-describedby={keyEditorError ? `${provider.id}-key-error` : undefined} /><button type="button" onClick={onSave}>Enregistrer</button></div>{keyEditorError && <p className="key-editor-error" id={`${provider.id}-key-error`} role="alert">{keyEditorError}</p>}<div className="editor-actions"><span>{'Conservation : '}{'mode choisi dans le gestionnaire'}</span><button type="button" onClick={onCancel}>Annuler</button></div></div>}
     </article>
   )
 }
