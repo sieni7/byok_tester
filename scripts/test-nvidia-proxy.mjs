@@ -4,7 +4,7 @@ import nvidiaProxy from '../netlify/functions/nvidia-proxy.js'
 
 const validInput = {
   apiKey: 'test-nvidia-key',
-  model: 'meta/llama-3.1-8b-instruct',
+  model: 'meta/llama-3.3-70b-instruct',
   prompt: 'Bonjour NVIDIA',
 }
 
