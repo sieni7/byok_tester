@@ -1,51 +1,90 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import test from 'node:test'
 
-const { emptyCredentials, loadCredentials, saveCredentials } = await import('../src/services/credential-service.ts')
+const tempDir = mkdtempSync(join(tmpdir(), 'keydock-credential-tests-'))
+writeFileSync(join(tempDir, 'package.json'), JSON.stringify({ type: 'module' }))
 
-class InstrumentedStorage {
-  constructor(initial = {}) {
-    this.values = new Map(Object.entries(initial))
-    this.calls = []
-  }
-  getItem(key) {
-    this.calls.push(['getItem', key])
-    return this.values.get(key) ?? null
-  }
-  setItem(key, value) {
-    this.calls.push(['setItem', key, value])
-    this.values.set(key, value)
-  }
-  removeItem(key) {
-    this.calls.push(['removeItem', key])
-    this.values.delete(key)
+// Use the TypeScript CLI instead of compiler runtime APIs, which differ across TS releases.
+// The browser-side credential service does not need Node ambient types.
+execFileSync(process.execPath, [
+  'node_modules/typescript/bin/tsc',
+  'src/services/credential-service.ts',
+  '--target', 'ES2022',
+  '--module', 'ESNext',
+  '--moduleResolution', 'Bundler',
+  '--rootDir', 'src',
+  '--outDir', tempDir,
+  '--skipLibCheck',
+  '--ignoreConfig',
+], { stdio: 'inherit' })
+
+const compiledUrl = pathToFileURL(join(tempDir, 'services', 'credential-service.js')).href
+const { loadCredentials, saveCredentials, emptyCredentials, CREDENTIAL_STORAGE_KEY } = await import(compiledUrl)
+const source = readFileSync('src/services/credential-service.ts', 'utf8')
+assert.match(source, /mode === 'session'/, 'credential service must explicitly handle session mode')
+
+test.after(() => {
+  rmSync(tempDir, { recursive: true, force: true })
+})
+
+function instrumentedStorage(initial = '{}', shouldThrow = false) {
+  const calls = []
+  return {
+    calls,
+    getItem(key) {
+      calls.push(['getItem', key])
+      if (shouldThrow) throw new Error('storage blocked')
+      return initial
+    },
+    setItem(key, value) {
+      calls.push(['setItem', key, value])
+      if (shouldThrow) throw new Error('storage blocked')
+    },
+    removeItem(key) {
+      calls.push(['removeItem', key])
+      if (shouldThrow) throw new Error('storage blocked')
+    },
   }
 }
 
-class BrokenStorage {
-  getItem() { throw new Error('blocked') }
-  setItem() { throw new Error('blocked') }
-  removeItem() { throw new Error('blocked') }
-}
+test('session load performs no storage reads or writes', () => {
+  const storage = instrumentedStorage(JSON.stringify({ openrouter: 'must-not-load' }))
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage })
+  assert.deepEqual(loadCredentials('session'), emptyCredentials())
+  assert.deepEqual(storage.calls, [])
+  assert.deepEqual(loadCredentials('session', storage), emptyCredentials())
+  assert.deepEqual(storage.calls, [])
+})
+test('session save performs no storage reads or writes', () => {
+  const storage = instrumentedStorage()
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage })
+  assert.equal(saveCredentials({ ...emptyCredentials(), openrouter: 'volatile' }, 'session'), false)
+  assert.deepEqual(storage.calls, [])
+  assert.equal(saveCredentials({ ...emptyCredentials(), openrouter: 'volatile' }, 'session', storage), false)
+  assert.deepEqual(storage.calls, [])
+})
 
-const empty = emptyCredentials()
-const sessionStorage = new InstrumentedStorage({ 'keydock-api-keys-v1': JSON.stringify({ openrouter: 'should-not-load' }) })
-Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: sessionStorage })
-assert.deepEqual(loadCredentials('session'), empty)
-assert.deepEqual(sessionStorage.calls, [], 'session startup must not even resolve localStorage')
-assert.equal(saveCredentials({ ...empty, github: 'session-secret' }, 'session'), false)
-assert.deepEqual(sessionStorage.calls, [], 'session save must not even resolve localStorage')
-assert.deepEqual(loadCredentials('session', sessionStorage), empty)
-assert.deepEqual(sessionStorage.calls, [], 'session mode must not read storage')
-assert.equal(saveCredentials({ ...empty, groq: 'session-secret' }, 'session', sessionStorage), false)
-assert.deepEqual(sessionStorage.calls, [], 'session mode must not write storage')
+test('local mode loads credentials from the expected key', () => {
+  const credentials = { ...emptyCredentials(), openrouter: 'local-test-key' }
+  const storage = instrumentedStorage(JSON.stringify(credentials))
+  assert.deepEqual(loadCredentials('local', storage), credentials)
+  assert.deepEqual(storage.calls, [['getItem', CREDENTIAL_STORAGE_KEY]])
+})
 
-const localStorage = new InstrumentedStorage({ 'keydock-api-keys-v1': JSON.stringify({ openrouter: 'local-value' }) })
-assert.equal(loadCredentials('local', localStorage).openrouter, 'local-value')
-assert.equal(saveCredentials({ ...empty, github: 'saved-value' }, 'local', localStorage), true)
-assert.equal(JSON.parse(localStorage.values.get('keydock-api-keys-v1')).github, 'saved-value')
+test('local mode saves credentials', () => {
+  const storage = instrumentedStorage()
+  const credentials = { ...emptyCredentials(), groq: 'local-test-key' }
+  assert.equal(saveCredentials(credentials, 'local', storage), true)
+  assert.deepEqual(storage.calls[0], ['setItem', CREDENTIAL_STORAGE_KEY, JSON.stringify(credentials)])
+})
 
-const brokenStorage = new BrokenStorage()
-assert.deepEqual(loadCredentials('local', brokenStorage), empty)
-assert.equal(saveCredentials({ ...empty, nvidia: 'ignored-value' }, 'local', brokenStorage), false)
-
-console.log('credential behavioral tests passed')
+test('unavailable storage falls back to empty credentials without throwing', () => {
+  const storage = instrumentedStorage('{}', true)
+  assert.deepEqual(loadCredentials('local', storage), emptyCredentials())
+  assert.equal(saveCredentials(emptyCredentials(), 'local', storage), false)
+})

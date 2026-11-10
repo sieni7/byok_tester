@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "test:credentials": "node --experimental-strip-types scripts/test-credentials.mjs",
+    "test:credentials": "node scripts/test-credentials.mjs",
     "verify:alpha1": "node scripts/verify-alpha1.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },

@@ -25,9 +25,11 @@ const expectedVersions = {
   '@vitejs/plugin-react': '6.2.1',
 }
 assert.equal(packageJson.version, '0.2.0-alpha.1.2')
+assert.equal(lockfile.version, packageJson.version)
+assert.equal(lockfile.packages[''].version, packageJson.version)
 assert.equal(packageJson.engines.node, '^20.19.0 || >=22.12.0')
 assert.equal(read('.nvmrc').trim(), '22.12.0')
-assert.equal(packageJson.scripts['test:credentials'], 'node --experimental-strip-types scripts/test-credentials.mjs')
+assert.equal(packageJson.scripts['test:credentials'], 'node scripts/test-credentials.mjs')
 for (const [name, version] of Object.entries(expectedVersions)) {
   const declared = packageJson.dependencies[name] ?? packageJson.devDependencies[name]
   assert.equal(declared, version, `${name} is not pinned`)
@@ -53,7 +55,7 @@ assert.match(models, /accessPolicyId/)
 assert.match(credentials, /if \(mode === 'session'\) return emptyCredentials\(\)/)
 assert.match(credentials, /storage === undefined \? getDefaultLocalStorage\(\)/)
 assert.match(credentials, /storage\.setItem\(probeKey/)
-assert.match(credentials, /resolvedStorage\.setItem\(CREDENTIAL_STORAGE_KEY/)
+assert.match(credentials, /(resolvedStorage|targetStorage)\.setItem\(CREDENTIAL_STORAGE_KEY/)
 assert.match(credentials, /return false/)
 
 const sourceFiles = []
@@ -80,7 +82,7 @@ for (const file of sourceFiles) {
   for (const pattern of secretPatterns) assert.equal(pattern.test(contents), false, `Potential secret in ${file}`)
 }
 
-const behavior = spawnSync(process.execPath, ['--experimental-strip-types', 'scripts/test-credentials.mjs'], { encoding: 'utf8' })
+const behavior = spawnSync(process.execPath, ['scripts/test-credentials.mjs'], { encoding: 'utf8' })
 assert.equal(behavior.status, 0, `Credential behavioral tests failed:\n${behavior.stdout}\n${behavior.stderr}`)
 
 console.log(`alpha.1.2 verification passed (${sourceFiles.length} files scanned)`)

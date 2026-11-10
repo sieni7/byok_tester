@@ -26,7 +26,7 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
     grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
     key: <><path d="M21 2 13.6 9.4" /><circle cx="8.5" cy="15.5" r="5.5" /><path d="m12.5 11.5 2 2m-5-1 2 2" /></>,
     book: <><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z" /><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M8 7h7m-7 4h5" /></>,
-    settings: <><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1A1.7 1.7 0 0 1 7.7 3.3l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z" /></>,
+    settings: <><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1A1.7 1.7 0 0 1 7.7 3.3l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l-.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z" /></>,
     plus: <><path d="M12 5v14m-7-7h14" /></>,
     paperclip: <path d="m20.5 11.5-8.2 8.2a5 5 0 0 1-7.1-7.1l8.2-8.2a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.8 1.8 0 0 1-2.5-2.5l7.6-7.6" />,
     mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-3 0h6" /></>,
@@ -51,6 +51,11 @@ function App() {
   const [draftKey, setDraftKey] = useState('')
   const [revealed, setRevealed] = useState<Set<ProviderId>>(new Set())
   const [copied, setCopied] = useState<ProviderId | null>(null)
+  const [copyError, setCopyError] = useState<ProviderId | null>(null)
+  const [storageFeedback, setStorageFeedback] = useState<'saved' | 'error' | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  )
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [draftMessage, setDraftMessage] = useState('')
   const [attachedFile, setAttachedFile] = useState<string | null>(null)
@@ -58,15 +63,31 @@ function App() {
   const configuredCount = useMemo(() => providers.filter((provider) => Boolean(keys[provider.id])).length, [keys])
 
   useEffect(() => {
-    saveCredentials(keys, storageMode)
+    if (storageMode === 'session') {
+      setStorageFeedback(null)
+      return
+    }
+    setStorageFeedback(saveCredentials(keys, 'local') ? 'saved' : 'error')
   }, [keys, storageMode])
 
   const fallbackProvider = providers.slice(0, 1)[0]!
   const configuredProvider = providers.find((provider) => provider.id === activeProvider) ?? fallbackProvider
   const beginAdd = () => beginEdit(providers.find((provider) => !keys[provider.id])?.id ?? fallbackProvider.id)
+
   const changeStorageMode = (mode: CredentialStorageMode) => {
+    if (mode === storageMode) return
+    const hasVolatileKeys = Object.values(keys).some(Boolean)
+    if (hasVolatileKeys) {
+      const message = mode === 'local'
+        ? 'Passer au stockage local remplacera les clés actuellement en mémoire par celles déjà enregistrées localement (ou par une liste vide). Continuer ?'
+        : 'Revenir au mode session remplacera les clés actuellement affichées par une session vide. Les clés déjà enregistrées localement resteront dans le navigateur. Continuer ?'
+      if (!window.confirm(message)) return
+    }
     setStorageMode(mode)
     setKeys(loadCredentials(mode))
+    setOpenEditor(null)
+    setDraftKey('')
+    setRevealed(new Set())
   }
 
   const beginEdit = (provider: ProviderId) => {
@@ -97,9 +118,16 @@ function App() {
 
   const copyKey = async (provider: ProviderId) => {
     if (!keys[provider]) return
-    await navigator.clipboard?.writeText(keys[provider])
-    setCopied(provider)
-    window.setTimeout(() => setCopied(null), 1600)
+    setCopied(null)
+    setCopyError(null)
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable')
+      await navigator.clipboard.writeText(keys[provider])
+      setCopied(provider)
+      window.setTimeout(() => setCopied((current) => current === provider ? null : current), 1600)
+    } catch {
+      setCopyError(provider)
+    }
   }
 
   const handleFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +153,7 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       <aside className="sidebar">
         <div className="brand-lockup">
           <div className="brand-mark"><span /><span /><span /><span /></div>
@@ -165,7 +193,13 @@ function App() {
       <main className="workspace" id="dashboard">
         <header className="topbar">
           <div className="crumbs"><span>Workspace</span><b>/</b><strong>Dashboard</strong></div>
-          <div className="topbar-actions"><div className="sync-status"><i /> {storageMode === 'session' ? 'session only' : 'local only'} <span>·</span> synced just now</div><button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button></div>
+          <div className="topbar-actions">
+            <div className="sync-status"><i /> {storageMode === 'session' ? 'session only · volatile' : storageFeedback === 'error' ? 'local save unavailable' : 'local browser storage'}</div>
+            <button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} aria-pressed={theme === 'dark'}>
+              {theme === 'dark' ? '☀ Mode clair' : '☾ Mode sombre'}
+            </button>
+            <button className="icon-button top-settings" aria-label="Paramètres"><Icon name="settings" size={18} /></button>
+          </div>
         </header>
 
         <section className="intro-row">
@@ -177,7 +211,7 @@ function App() {
           <div className="intro-stats">
             <div className="stat-block"><strong>{configuredCount}<small>/ {providers.length}</small></strong><span>providers ready</span></div>
             <div className="stat-divider" />
-            <div className="stat-block"><strong>100<span>%</span></strong><span>local storage</span></div>
+            <div className="stat-block"><strong>{storageMode === 'session' ? 'RAM' : '100%'}</strong><span>{storageMode === 'session' ? 'volatile session' : 'local storage'}</span></div>
           </div>
         </section>
 
@@ -221,10 +255,11 @@ function App() {
             <div className="keys-head"><div><div className="section-kicker">YOUR PROVIDERS</div><h2 id="keys-title">API key manager</h2></div><button className="add-key-button" type="button" onClick={beginAdd}><Icon name="plus" size={16} /> Add key</button></div>
             <div className="keys-summary"><div className="summary-main"><div className="summary-icon"><Icon name="key" size={19} /></div><div><strong>{configuredCount === 0 ? 'No keys yet' : `${configuredCount} provider${configuredCount > 1 ? 's' : ''} configured`}</strong><span>{storageMode === 'session' ? 'Session only · cleared on reload' : 'Stored only in this browser'}</span></div></div><div className="summary-badge"><span /> {storageMode === 'session' ? 'session only' : 'local storage only*'}</div></div>
             <div className="storage-mode-row"><span>Credential mode</span><select aria-label="Choisir le mode de stockage" value={storageMode} onChange={(event) => changeStorageMode(event.target.value as CredentialStorageMode)}><option value="session">Session only (volatile)</option><option value="local">Local browser storage</option></select></div>
+            {storageMode === 'local' && <p className={`storage-feedback ${storageFeedback === 'error' ? 'error' : 'success'}`} role="status">{storageFeedback === 'error' ? 'Échec de sauvegarde : le navigateur bloque ou ne permet pas le stockage local. Vos clés ne sont pas persistées.' : storageFeedback === 'saved' ? 'Sauvegarde locale confirmée.' : 'Vérification du stockage local…'}</p>}
             <div className="provider-list">
-              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
+              {providers.map((provider) => <ProviderCard key={provider.id} provider={provider} value={keys[provider.id]} isActive={activeProvider === provider.id} isOpen={openEditor === provider.id} draftKey={draftKey} revealed={revealed.has(provider.id)} copied={copied === provider.id} copyError={copyError === provider.id} onActivate={() => setActiveProvider(provider.id)} onEdit={() => beginEdit(provider.id)} onDraft={setDraftKey} onSave={saveKey} onCancel={() => setOpenEditor(null)} onReveal={() => toggleReveal(provider.id)} onCopy={() => copyKey(provider.id)} onDelete={() => deleteKey(provider.id)} />)}
             </div>
-            <p className="security-caption">* Local browser storage is not a secure vault. Session mode is volatile and writes nothing to localStorage.</p>
+            <p className="security-caption">* Local browser storage is not a secure vault. Session mode is volatile and writes nothing to the credentials store.</p>
           </section>
         </div>
       </main>
@@ -240,6 +275,7 @@ type ProviderCardProps = {
   draftKey: string
   revealed: boolean
   copied: boolean
+  copyError: boolean
   onActivate: () => void
   onEdit: () => void
   onDraft: (value: string) => void
@@ -250,7 +286,7 @@ type ProviderCardProps = {
   onDelete: () => void
 }
 
-function ProviderCard({ provider, value, isActive, isOpen, draftKey, revealed, copied, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
+function ProviderCard({ provider, value, isActive, isOpen, draftKey, revealed, copied, copyError, onActivate, onEdit, onDraft, onSave, onCancel, onReveal, onCopy, onDelete }: ProviderCardProps) {
   const hasKey = Boolean(value)
   const masked = hasKey ? (revealed ? value : `${value.slice(0, 5)}••••••••${value.slice(-4)}`) : 'No key connected'
   return (
@@ -259,14 +295,15 @@ function ProviderCard({ provider, value, isActive, isOpen, draftKey, revealed, c
       <p className="provider-description">{provider.description}</p>
       <div className="provider-metrics"><div><strong>Model-level</strong><span>access policy</span></div><div><strong className="endpoint-text">{provider.endpoint}</strong><span>OpenAI-compatible endpoint</span></div></div>
       <div className={`key-row ${hasKey ? 'connected' : ''}`}>
-        <div className="key-status"><span className="key-status-dot" /><div><span className="key-label">{hasKey ? 'API key' : 'API key'}</span><strong>{masked}</strong></div></div>
+        <div className="key-status"><span className="key-status-dot" /><div><span className="key-label">API key</span><strong>{masked}</strong></div></div>
         <div className="key-actions">
           {hasKey && <><button type="button" className="plain-icon" onClick={onReveal} aria-label={revealed ? 'Masquer la clé' : 'Révéler la clé'}><Icon name={revealed ? 'eyeOff' : 'eye'} size={16} /></button><button type="button" className="plain-icon" onClick={onCopy} aria-label="Copier la clé"><Icon name="copy" size={16} /></button></>}
           <button type="button" className="edit-key" onClick={onEdit}>{hasKey ? 'Edit' : 'Connect'} <Icon name="arrow" size={14} /></button>
           {hasKey && <button type="button" className="plain-icon delete" onClick={onDelete} aria-label="Supprimer la clé"><Icon name="trash" size={15} /></button>}
         </div>
       </div>
-      {copied && <div className="copied-toast">Copied to clipboard</div>}
+      {copied && <div className="copied-toast" role="status">Copié dans le presse-papiers</div>}
+      {copyError && <div className="copy-error" role="alert">Copie impossible. Vérifiez les autorisations du navigateur ou utilisez la sélection manuelle.</div>}
       {isOpen && <div className="key-editor"><label htmlFor={`${provider.id}-key`}>Paste your {provider.name} key</label><div className="key-input-row"><input id={`${provider.id}-key`} type="password" autoFocus value={draftKey} onChange={(event) => onDraft(event.target.value)} placeholder="sk-..." /><button type="button" onClick={onSave}>Save</button></div><div className="editor-actions"><span>Stored in current credential mode</span><button type="button" onClick={onCancel}>Cancel</button></div></div>}
     </article>
   )
