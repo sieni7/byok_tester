@@ -6,7 +6,7 @@
 
 Keydock est une interface React + TypeScript pensée pour les prototypes, les équipes produit et les développeurs qui veulent tester rapidement plusieurs providers LLM depuis un même espace. Le dashboard réunit un playground conversationnel à gauche et un gestionnaire de credentials à droite, dans une interface claire, dense et responsive.
 
-> **Statut : v0.2.0-alpha.1.1 corrective — fondations validées** — l’interface est pilotée par le registre, les politiques d’accès sont rattachées aux modèles, et les modes session/local sont explicitement séparés. Aucun provider réel n’est encore appelé.
+> **Statut : v0.2.0-alpha.1.2 corrective — socle session-first vérifiable** — l’interface est pilotée par le registre, les politiques d’accès sont rattachées aux modèles, le mode session est activé par défaut et les tests credentials exercent le service TypeScript réel. Aucun provider réel n’est encore appelé.
 
 ## Ce que le prototype couvre
 
@@ -44,28 +44,26 @@ Une alternative pratique pour les équipes déjà équipées d’un compte GitHu
 > Les quotas sont des repères d’interface et peuvent évoluer selon les conditions commerciales de chaque fournisseur. Vérifiez toujours la documentation officielle avant une mise en production.
 
 ## Modèle de sécurité actuel
-
-Keydock adopte une posture **local-first** pour ce prototype :
-
-1. Les valeurs saisies sont conservées dans le `localStorage` du navigateur, sous une clé d’application dédiée.
-2. Aucune clé privée n’est présente dans le code source, le dépôt ou les fichiers `.env`.
-3. L’interface ne transmet pas les credentials à une base de données ou à un service de stockage tiers.
-4. Les clés sont masquées par défaut et ne sont copiées que sur action explicite de l’utilisateur.
-5. Le playground actuel simule la préparation d’un prompt ; il ne déclenche pas encore d’appel fournisseur en arrière-plan.
-
-**Important :** `localStorage` n’est pas un coffre chiffré. Toute personne disposant d’un accès au profil navigateur peut potentiellement lire ces valeurs. Pour une version de production, remplacer ce stockage par un vault sécurisé ou un backend de proxy avec rotation, contrôle d’accès, audit, rate limiting et séparation stricte des environnements.
+Keydock adopte une posture **session-first** pour ce prototype :
+1. Par défaut, les valeurs saisies restent uniquement en mémoire et ne sont jamais écrites dans le `localStorage`.
+2. Le mode **Local browser storage** est optionnel et doit être activé explicitement dans l’interface.
+3. Aucune clé privée n’est présente dans le code source, le dépôt ou les fichiers `.env`.
+4. L’interface ne transmet pas les credentials à une base de données ou à un service de stockage tiers.
+5. Les clés sont masquées par défaut et ne sont copiées que sur action explicite de l’utilisateur.
+6. Le playground actuel simule la préparation d’un prompt ; il ne déclenche pas encore d’appel fournisseur en arrière-plan.
+**Important :** même le mode local n’est pas un coffre chiffré. Toute personne disposant d’un accès au profil navigateur peut potentiellement lire ces valeurs. Pour une version de production, remplacer ce stockage par un vault sécurisé ou un backend de proxy avec rotation, contrôle d’accès, audit, rate limiting et séparation stricte des environnements.
 
 ## Stack
 
 - **React 19** et **TypeScript**
 - **Vite** pour le développement et le bundling
 - CSS natif avec design system léger, responsive et sans dépendance UI lourde
-- `localStorage` pour la persistance locale du prototype
+- mémoire de session par défaut ; `localStorage` uniquement en mode opt-in
 - Netlify pour la publication statique
 
 ## Démarrage local
 
-Prérequis : Node.js 18+ et npm.
+Prérequis : Node.js `20.19+` ou `22.12+` et npm. Le dépôt fixe la version Netlify et la version recommandée via `.nvmrc` à `22.12.0`.
 
 ```bash
 npm install
@@ -77,8 +75,12 @@ Le serveur de développement écoute sur le port `3000` lorsque le runtime Manus
 ```bash
 npm run build
 ```
-
 Le résultat est généré dans `dist/`.
+Pour exécuter les tests comportementaux du service credentials :
+```bash
+npm run test:credentials
+npm run verify:alpha1
+```
 
 ## Déploiement Netlify
 
@@ -105,8 +107,15 @@ Dans Netlify, sélectionnez le dépôt GitHub, conservez ces valeurs puis lancez
 ```text
 .
 ├── src/
-│   ├── main.tsx          # application React, état local et interactions
+│   ├── app/App.tsx       # playground et interface principale
+│   ├── core/             # registres providers, modèles et policies
+│   ├── services/         # credentials et services transverses
+│   ├── types/            # contrats TypeScript communs
+│   ├── main.tsx          # montage React minimal
 │   └── styles.css        # design system et responsive layout
+├── scripts/
+│   ├── verify-alpha1.mjs # contrôle structurel, scan et orchestration
+│   └── test-credentials.mjs # tests comportementaux de storage
 ├── public/
 │   └── manus-routes.json # routes déclarées au runtime
 ├── netlify.toml          # build et fallback SPA Netlify
@@ -116,7 +125,7 @@ Dans Netlify, sélectionnez le dépôt GitHub, conservez ces valeurs puis lancez
 
 ## Roadmap proposée
 
-La série v0.2 est livrée par étapes : `alpha.1` socle initial, `alpha.1.1` corrective et fondations validées, `alpha.2` extension du credential UX, `alpha.3` premier appel NVIDIA NIM, `beta.1` chat réel et erreurs normalisées, `beta.2` catalogue multi-provider, `rc.1` comparateur et validation, puis `v0.2.0` stable.
+La série v0.2 est livrée par étapes : `alpha.1` socle initial, `alpha.1.1` corrective structurelle, `alpha.1.2` corrective session-first et vérifiable, `alpha.2` extension du credential UX, `alpha.3` premier appel NVIDIA NIM, `beta.1` chat réel et erreurs normalisées, `beta.2` catalogue multi-provider, `rc.1` comparateur et validation, puis `v0.2.0` stable.
 
 - Connecter le chat à un proxy sécurisé et à des modèles réels.
 - Ajouter un coffre chiffré, la rotation et la révocation des credentials.

@@ -44,8 +44,8 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
 }
 
 function App() {
-  const [storageMode, setStorageMode] = useState<CredentialStorageMode>('local')
-  const [keys, setKeys] = useState<Record<ProviderId, string>>(() => loadCredentials('local'))
+  const [storageMode, setStorageMode] = useState<CredentialStorageMode>('session')
+  const [keys, setKeys] = useState<Record<ProviderId, string>>(() => loadCredentials('session'))
   const [activeProvider, setActiveProvider] = useState<ProviderId>('openrouter')
   const [openEditor, setOpenEditor] = useState<ProviderId | null>(null)
   const [draftKey, setDraftKey] = useState('')

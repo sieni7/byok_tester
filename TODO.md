@@ -3,7 +3,8 @@
 ## Keydock v0.2 — Free Models Lab
 - [x] `v0.2.0-alpha.1` : les dépendances sont verrouillées, les types communs et registres providers/modèles/policies sont en place, et l’application est découpée autour de `src/app/App.tsx` sans régression visuelle constatée.
 - [x] `v0.2.0-alpha.1.1 corrective` : l’interface est générée par le registre, les politiques sont inconnues par défaut et rattachées aux modèles, les modes session/local sont distincts, le stockage indisponible ne fait pas crasher l’application, Node est documenté, et les contrôles indépendants, le build et le Preview passent.
-- [ ] `v0.2.0-alpha.2` : proposer explicitement les modes credentials session et local.
+- [x] `v0.2.0-alpha.1.2 corrective` : le mode session est le mode initial sans résolution de localStorage, les tests comportementaux exercent le service réel, le scan de secrets est récursif sans auto-détection, le README est cohérent, et la revue indépendante passe.
+- [ ] `v0.2.0-alpha.2` : étendre l’UX credentials et préparer les invariants nécessaires aux premiers appels fournisseurs.
 - [ ] `v0.2.0-alpha.3` : connecter NVIDIA NIM pour un premier appel texte réel.
 - [ ] `v0.2.0-beta.1` : remplacer les réponses de démonstration par un chat réel et normaliser les erreurs.
 - [ ] `v0.2.0-beta.2` : ajouter les autres providers et le catalogue de modèles.
